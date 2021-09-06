@@ -1,6 +1,6 @@
 import { connect } from "react-redux";
 import { setSelectedPlace, setPlacePreviewVisibility, setSearchVisibility } from "../../store/actions";
-import { IState, Place } from "../../store/models";
+import { IState, Place, Entity } from "../../store/models";
 import {BiArrowBack} from "react-icons/bi"
 import "./Search.css";
 
@@ -36,7 +36,7 @@ const mapDispatchToProps = (dispatch: any) => {
     closeSearch: () =>
       dispatch(setSearchVisibility(false)),
 
-    setSelectedPlace: (payload: Place) =>
+    setSelectedPlace: (payload: Entity) =>
       {
         dispatch(setSelectedPlace(payload));
         dispatch(setPlacePreviewVisibility(true))

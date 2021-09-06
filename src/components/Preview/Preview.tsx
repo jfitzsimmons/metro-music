@@ -19,8 +19,20 @@ const Preview = ({ isVisible, place, closePreview }: any) => {
         style={{ backgroundImage: `url(${place?.picture})` }}
       ></div>
       <div className="preview__description__container">
-        <div className="preview__title">{place?.title}</div>
-        <div className="preview__description">{place?.description}</div>
+        <div className="preview__title">{place?.id}</div>
+        <div className="preview__description">
+          <ul>
+            <li>latitude: {place?.vehicle.position.latitude}</li>
+            <li>longitude: {place?.vehicle.position.longitude}</li>
+            <li>timestamp: {new Date(place?.vehicle.timestamp * 1000).toDateString()} | {new Date(place?.vehicle.timestamp * 1000).toTimeString()}</li>
+            <li>routeId: {place?.vehicle.trip.routeId}</li>
+            <li>startDate: {place?.vehicle.trip.startDate}</li>
+            <li>startTime: {place?.vehicle.trip.startTime}</li>
+            <li>tripId: {place?.vehicle.trip.tripId}</li>
+            <li>vehicle id: {place?.vehicle.vehicle.id}</li>
+            <li>vehicle label: {place?.vehicle.vehicle.label}</li>
+          </ul>
+        </div>
         <div style={{display: 'flex'}}>
           <a className="preview__button" href={place?.seeMoreLink} target="_blank" rel="noreferrer">See more</a>
         </div>

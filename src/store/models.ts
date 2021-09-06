@@ -5,8 +5,8 @@ export interface SearchState {
 }
 
 export interface PlaceState {
-  places: Place[];
-  selectedPlace: Place | null;
+  places: Entity[];
+  selectedPlace: Entity | null;
   placePreviewsIsVisible: boolean;
   placeFormIsVisible: boolean;
   prePlacePosition: LatLngExpression;
@@ -18,9 +18,32 @@ export interface IState {
 }
 
 export interface Place {
-  picture: string;
-  title: string;
-  description: string;
-  seeMoreLink: string;
+  picture?: string;
+  title?: string;
+  description?: string;
+  seeMoreLink?: string;
   position: LatLngExpression;
+}
+
+export interface Entity {
+  id: string;
+  vehicle: Vehicle;
+}
+
+export interface Vehicle {
+  position: {
+    latitude: number;
+    longitude: number;
+  };
+  timestamp: string;
+  trip: {
+    routeId: string;
+  ​​​​​  startDate: string;
+  ​​​​​  startTime: string;
+  ​​​​  tripId: string;
+  };
+  vehicle: {
+    id: string;
+    label: string;
+  }
 }
