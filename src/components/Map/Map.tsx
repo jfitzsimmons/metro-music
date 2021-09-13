@@ -1,9 +1,9 @@
-import React, { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { LatLngExpression } from "leaflet";
-import { MapContainer, TileLayer, Marker, Tooltip, Polyline } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Tooltip } from "react-leaflet";
 import { connect } from "react-redux";
 import { setPlacePreviewVisibility, setSelectedPlace, setAllPlaces } from "../../store/actions";
-import { IState, Place, Entity } from "../../store/models";
+import { IState, Entity } from "../../store/models";
 import AddMarker from "./AddMarker";
 
 import "./Map.css";
@@ -17,7 +17,7 @@ const Map = ({
   setNewPlaceMarkers,
 }: any) => {
   const defaultPosition: LatLngExpression = [38.62727, -90.19789]; // stl position
-  const [polyLineProps, setPolyLineProps] = useState([]);
+  //const [polyLineProps, setPolyLineProps] = useState([]);
 
   const handler = 
     fetch('/.netlify/functions/metro-updates')
@@ -25,7 +25,20 @@ const Map = ({
 
   const entity = async () => {
     const a = await handler;
+    //save old markers
+    //check which markers actually updated.
+    console.log('entity1');
+    console.log(JSON.stringify(a));
     setNewPlaceMarkers(a);
+  };
+
+  const entityNew = async () => {
+    const b = await handler;
+    //save old markers
+    //check which markers actually updated.
+    console.log('entity2');
+    console.log(JSON.stringify(b));
+    setNewPlaceMarkers(b);
   };
 
   // probably need to steal my setInterval stuff from next.js blog TEST JPF
@@ -61,10 +74,11 @@ const Map = ({
 
   return (
     <div className="map__container">
+      <button onClick={() => entityNew()}>New Entities</button>
       <MapContainer
         center={defaultPosition}
         zoom={11}
-        scrollWheelZoom={false}
+        scrollWheelZoom={true}
         style={{ height: "100vh" }}
         zoomControl={false}
       >
@@ -72,7 +86,7 @@ const Map = ({
           attribution='&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
-        <Polyline positions={polyLineProps} />
+       {/**  <Polyline positions={polyLineProps} /> */}
         {places.map((place: Entity) => (
           <Marker
             key={place.id}
