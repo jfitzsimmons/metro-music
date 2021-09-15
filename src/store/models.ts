@@ -28,6 +28,11 @@ export interface Place {
 export interface Entity {
   id: string;
   vehicle: Vehicle;
+  movement: {
+    distance: number;
+    mph: number;
+    timing: number
+  }
 }
 
 export interface Vehicle {

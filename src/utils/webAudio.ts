@@ -1,3 +1,4 @@
+import { rndmRng } from './calculations';
 import { wavetable } from './wavetable';
 
 let audioContext = new (window.AudioContext)();
@@ -5,7 +6,6 @@ let oscList = [];
 let mainGainNode: GainNode;
 let ambientPan = null;
 
-let noteFreq = null;
 let customWaveform: PeriodicWave | null = null;
 let sineTerms = null;
 let cosineTerms = null;
@@ -13,156 +13,137 @@ let volumeControl: HTMLInputElement | null
 volumeControl = document.querySelector<HTMLInputElement>("input[name='volume']");
 
 
-function createNoteTable() {
-  let noteFreq = {
-    1: {
-      "C": 32.703195662574829,
-      "C#": 34.647828872109012,
-      "D": 36.708095989675945,
-      "D#": 38.890872965260113,
-      "E": 41.203444614108741,
-      "F": 43.653528929125485,
-      "F#": 46.249302838954299,
-      "G": 48.999429497718661,
-      "G#": 51.913087197493142,
-      "A": 55.000000000000000,
-      "A#": 58.270470189761239,
-      "B": 61.735412657015513,
-    },
-    2: {
-      "C": 65.406391325149658,
-      "C#": 69.295657744218024,
-      "D": 73.416191979351890,
-      "D#": 77.781745930520227,
-      "E": 82.406889228217482,
-      "F": 87.307057858250971,
-      "F#": 92.498605677908599,
-      "G": 97.998858995437323,
-      "G#": 103.826174394986284,
-      "A": 110.000000000000000,
-      "A#": 116.540940379522479,
-      "B": 123.470825314031027,
-    },
-    3:{
-      "C": 130.812782650299317,
-      "C#": 138.591315488436048,
-      "D": 146.832383958703780,
-      "D#": 155.563491861040455,
-      "E": 164.813778456434964,
-      "F": 174.614115716501942,
-      "F#": 184.997211355817199,
-      "G": 195.997717990874647,
-      "G#": 207.652348789972569,
-      "A": 220.000000000000000,
-      "A#": 233.081880759044958,
-      "B": 246.941650628062055,
-    },
-    4:{
-      "C": 261.625565300598634,
-      "C#": 277.182630976872096,
-      "D": 293.664767917407560,
-      "D#": 311.126983722080910,
-      "E": 329.627556912869929,
-      "F": 349.228231433003884,
-      "F#": 369.994422711634398,
-      "G": 391.995435981749294,
-      "G#": 415.304697579945138,
-      "A": 440.000000000000000,
-      "A#": 466.163761518089916,
-      "B": 493.883301256124111,
-    },
-    5: {
-      "C": 523.251130601197269,
-      "C#": 554.365261953744192,
-      "D": 587.329535834815120,
-      "D#": 622.253967444161821,
-      "E": 659.255113825739859,
-      "F": 698.456462866007768,
-      "F#": 739.988845423268797,
-      "G": 783.990871963498588,
-      "G#": 830.609395159890277,
-      "A": 880.000000000000000,
-      "A#": 932.327523036179832,
-      "B": 987.766602512248223,
-    },
-    6: {
-      "C": 1046.502261202394538,
-      "C#": 1108.730523907488384,
-      "D": 1174.659071669630241,
-      "D#": 1244.507934888323642,
-      "E": 1318.510227651479718,
-      "F": 1396.912925732015537,
-      "F#": 1479.977690846537595,
-      "G": 1567.981743926997176,
-      "G#": 1661.218790319780554,
-      "A": 1760.000000000000000,
-      "A#": 1864.655046072359665,
-      "B": 1975.533205024496447,
-    }
-  }
-  return noteFreq;
+export interface Octaves {
+  1: Scale;
+  2: Scale;
+  3: Scale;
+  4: Scale;
+  5: Scale;
+  6: Scale;
 }
 
-const notes= createNoteTable();
-
-function setup() {
-  noteFreq = createNoteTable();
-  volumeControl?.addEventListener("change", changeVolume, false);
-  mainGainNode = audioContext.createGain();
-  mainGainNode.connect(audioContext.destination);
-  if (volumeControl !== null) mainGainNode.gain.value = parseInt(volumeControl.value);
-  ambientPan = audioContext.createStereoPanner()
-  sineTerms = new Float32Array([0, 0, 1, 0, 1]);
-  cosineTerms = new Float32Array(sineTerms.length);
-  customWaveform = audioContext.createPeriodicWave(cosineTerms, sineTerms);
-
-  for (let i=0; i<9; i++) {
-      oscList[i] = {};
-  }
+export interface Scale {
+  "C": number,
+  "C#": number,
+  "D": number,
+  "D#": number,
+  "E": number,
+  "F": number,
+  "F#": number,
+  "G": number,
+  "G#":number,
+  "A": number,
+  "A#": number,
+  "B": number,
 }
 
-setup();
-
+export const noteFreq:Octaves = {
+  1: {
+    "C": 32.703195662574829,
+    "C#": 34.647828872109012,
+    "D": 36.708095989675945,
+    "D#": 38.890872965260113,
+    "E": 41.203444614108741,
+    "F": 43.653528929125485,
+    "F#": 46.249302838954299,
+    "G": 48.999429497718661,
+    "G#": 51.913087197493142,
+    "A": 55.000000000000000,
+    "A#": 58.270470189761239,
+    "B": 61.735412657015513,
+  },
+  2: {
+    "C": 65.406391325149658,
+    "C#": 69.295657744218024,
+    "D": 73.416191979351890,
+    "D#": 77.781745930520227,
+    "E": 82.406889228217482,
+    "F": 87.307057858250971,
+    "F#": 92.498605677908599,
+    "G": 97.998858995437323,
+    "G#": 103.826174394986284,
+    "A": 110.000000000000000,
+    "A#": 116.540940379522479,
+    "B": 123.470825314031027,
+  },
+  3:{
+    "C": 130.812782650299317,
+    "C#": 138.591315488436048,
+    "D": 146.832383958703780,
+    "D#": 155.563491861040455,
+    "E": 164.813778456434964,
+    "F": 174.614115716501942,
+    "F#": 184.997211355817199,
+    "G": 195.997717990874647,
+    "G#": 207.652348789972569,
+    "A": 220.000000000000000,
+    "A#": 233.081880759044958,
+    "B": 246.941650628062055,
+  },
+  4:{
+    "C": 261.625565300598634,
+    "C#": 277.182630976872096,
+    "D": 293.664767917407560,
+    "D#": 311.126983722080910,
+    "E": 329.627556912869929,
+    "F": 349.228231433003884,
+    "F#": 369.994422711634398,
+    "G": 391.995435981749294,
+    "G#": 415.304697579945138,
+    "A": 440.000000000000000,
+    "A#": 466.163761518089916,
+    "B": 493.883301256124111,
+  },
+  5: {
+    "C": 523.251130601197269,
+    "C#": 554.365261953744192,
+    "D": 587.329535834815120,
+    "D#": 622.253967444161821,
+    "E": 659.255113825739859,
+    "F": 698.456462866007768,
+    "F#": 739.988845423268797,
+    "G": 783.990871963498588,
+    "G#": 830.609395159890277,
+    "A": 880.000000000000000,
+    "A#": 932.327523036179832,
+    "B": 987.766602512248223,
+  },
+  6: {
+    "C": 1046.502261202394538,
+    "C#": 1108.730523907488384,
+    "D": 1174.659071669630241,
+    "D#": 1244.507934888323642,
+    "E": 1318.510227651479718,
+    "F": 1396.912925732015537,
+    "F#": 1479.977690846537595,
+    "G": 1567.981743926997176,
+    "G#": 1661.218790319780554,
+    "A": 1760.000000000000000,
+    "A#": 1864.655046072359665,
+    "B": 1975.533205024496447,
+  }
+}
 
 const wave = audioContext.createPeriodicWave(wavetable.real, wavetable.imag);
 
 
 //this is the attack / release version of playing a tone
-export function playSweep(sweep: { freq: number; start: number; adsr: number; end: any; pan: number; }) {
+export function playSweep(sweep: { osc: OscillatorNode, gainNode: GainNode, stereo: StereoPannerNode, freq: number; start: number; adsr: number; end: any; pan: number; }) {
+    sweep.osc.frequency.value = sweep.freq;
+    sweep.osc.detune.value = rndmRng(14,-14);
+    sweep.gainNode.gain.cancelScheduledValues(audioContext.currentTime + sweep.start);
+    sweep.gainNode.gain.setValueAtTime(0, audioContext.currentTime + sweep.start);
+    if (volumeControl !== null) sweep.gainNode.gain.linearRampToValueAtTime(parseInt(volumeControl.value), audioContext.currentTime + sweep.start + sweep.adsr);
+    sweep.gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + sweep.start + sweep.end - (sweep.end - sweep.adsr)*.7);
+    sweep.stereo.pan.value = sweep.pan;
 
-    let osc = audioContext.createOscillator();
-    let ambientPan = audioContext.createStereoPanner()
-    //var stereoPannerNode = new StereoPannerNode(audioContext, sweep.pan)
-    osc.setPeriodicWave(wave);
-    osc.frequency.value = sweep.freq;
+    sweep.osc.connect(sweep.gainNode).connect(sweep.stereo).connect(audioContext.destination);
 
-  
-    //let mainGainNode = audioCtx.createGain();
-    mainGainNode.gain.cancelScheduledValues(audioContext.currentTime + sweep.start);
-    mainGainNode.gain.setValueAtTime(0, audioContext.currentTime + sweep.start);
-    // set our attack
-    if (volumeControl !== null) mainGainNode.gain.linearRampToValueAtTime(parseInt(volumeControl.value), audioContext.currentTime + sweep.start + sweep.adsr);
-
-    // set our release
-    mainGainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + sweep.start + sweep.end - sweep.adsr);
-
-    ambientPan.pan.value = sweep.pan;
-
-    osc.connect(mainGainNode).connect(ambientPan).connect(audioContext.destination);
-
-   // osc.connect(mainGainNode);
-    
-     
-     //osc.connect(audioContext.destination);
-     //osc.connect(mainGainNode);
-     //console.log(`mainGainNode.gain.value: ${mainGainNode.gain.value}`);
-     osc.start(audioContext.currentTime + sweep.start);
-     osc.stop(audioContext.currentTime + sweep.start + sweep.end);
-     
-     //console.log('sweep');
+    sweep.osc.start(audioContext.currentTime + sweep.start);
+    sweep.osc.stop(audioContext.currentTime + sweep.start + sweep.end);
 }
 
-function changeVolume(event: any) {
+export function changeVolume(event: any) {
     if (volumeControl !== null) mainGainNode.gain.value = parseInt(volumeControl.value)
   
   

@@ -32,8 +32,10 @@ export const orderBy = (arr: any[], props: any[], orders: { [x: string]: string;
 	}, 0)
 );
 
-export const countBy = (arr: any[], fn: string | number) =>
-  arr.map(typeof fn === 'function' ? fn : val => val[fn]).reduce((acc, val) => {
+export const countBy = (arr: any[], fn: any) =>
+  arr.map(typeof fn === 'function' ? fn : val => val[fn]).reduce((acc:any, val:any) => {
     acc[val] = (acc[val] || 0) + 1;
     return acc;
   }, {});
+
+  export const rndmRng = (h: number, l: number) => Math.random() * (h - l) + l;
