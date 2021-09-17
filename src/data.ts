@@ -12,7 +12,12 @@ export const data: Entity[] = [
         startTime: "11:00:00",
         tripId: "2882658",
       }, 
-      vehicle:  { id: "3501", label: "78 Bellefontaine - NORTH" }
+      vehicle:  { id: "3501", label: "78 Bellefontaine - NORTH" },
+    },
+    movement: {
+      distance: 0.4527353426375201,
+      mph: 21.16684718824769,
+      timing: 77,
     }
   },
 ];

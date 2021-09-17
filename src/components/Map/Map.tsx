@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { LatLngExpression } from "leaflet";
 import { MapContainer, TileLayer, Marker, Tooltip } from "react-leaflet";
 import { connect } from "react-redux";
@@ -22,11 +22,11 @@ const Map = ({
   //const [polyLineProps, setPolyLineProps] = useState([]);
   const handler = fetch('/.netlify/functions/metro-updates').then((res) => res.json())
 
-
+  const [ ent1, setEnt1 ] = useState<Entity[]>([]);
 
   let audioContext = new (window.AudioContext)();
-  let ent1: Entity[];
-  let ent2: Entity[]; 
+
+  let ent2: Entity[] = []; 
   let wrongIds = []
   let newVehicles = []
   let retiredVehicles = []
@@ -56,6 +56,11 @@ const Map = ({
     return adsr;
   }
 
+  function test() {
+    console.log("ENT 1 TEST");
+    console.log(ent1);
+  }
+
 function organizeVehicles() {
   let i2 = 0;
 
@@ -71,10 +76,16 @@ function organizeVehicles() {
               i2--
           }
       } else {
+          ent2[i2].movement = {
+            distance: distance(ent1[i].vehicle.position.latitude , ent1[i].vehicle.position.longitude, ent2[i2].vehicle.position.latitude, ent2[i2].vehicle.position.longitude),
+            timing: parseInt(ent2[i2].vehicle.timestamp) - parseInt(ent1[i].vehicle.timestamp),
+            mph: (distance(ent1[i].vehicle.position.latitude , ent1[i].vehicle.position.longitude, ent2[i2].vehicle.position.latitude, ent2[i2].vehicle.position.longitude) / (parseInt(ent2[i2].vehicle.timestamp) - parseInt(ent1[i].vehicle.timestamp))) *3600,
+          };
+          /** 
           ent2[i2].movement.distance = distance(ent1[i].vehicle.position.latitude , ent1[i].vehicle.position.longitude, ent2[i2].vehicle.position.latitude, ent2[i2].vehicle.position.longitude)
           ent2[i2].movement.timing = parseInt(ent2[i2].vehicle.timestamp) - parseInt(ent1[i].vehicle.timestamp) 
           ent2[i2].movement.mph = (ent2[i2].movement.distance / ent2[i2].movement.timing) *3600;
-
+*/
       }
 
       i2++
@@ -115,10 +126,11 @@ function organizeVehicles() {
               start = parseInt(r.vehicle.timestamp)-minTime;
               count = 1;
           }
-
-      let end = (r.movement.distance < .5) ? .5 : r.movement.distance;
+          let end: number = 0;
+          let adsr: number = 0;
+      if (r.movement && r.movement.distance) end = (r.movement.distance < .5) ? .5 : r.movement.distance;
           end *=3;
-      let adsr = getAdsr(r.movement.mph);
+        if (r.movement && r.movement.mph) adsr = getAdsr(r.movement.mph);
 
       let sweep = {
           i,
@@ -134,6 +146,7 @@ function organizeVehicles() {
 
       playSweep(sweep);
   })
+ //ent1 = ent2;
 }
 
 
@@ -148,24 +161,30 @@ function organizeVehicles() {
 
   const entity = async () => {
     const a = await handler;
+    setEnt1(a);
     //save old markers
     //check which markers actually updated.
     console.log('entity1');
+    //ent1 = a;
     console.log(JSON.stringify(a));
     setNewPlaceMarkers(a);
-    ent1 = a;
+    test();
+    //ent1 = a;
   };
 
   const entityNew = async () => {
-    const b = await handler;
+    ent2 = await handler;
     //save old markers
     //check which markers actually updated.
+    console.log('ent1 in NEW');
+    console.log(ent1);
     console.log('entity2');
-    console.log(JSON.stringify(b));
-    setNewPlaceMarkers(b);
-    ent2 = b;
+    //ent2 = b;
+    console.log(JSON.stringify(ent2));
+    setNewPlaceMarkers(ent2);
+    
     organizeVehicles();
-    ent1 = ent2;
+    
   };
 
   // probably need to steal my setInterval stuff from next.js blog TEST JPF
@@ -201,7 +220,7 @@ function organizeVehicles() {
 
   return (
     <div className="map__container">
-      <button onClick={() => entityNew()}>New Entities</button>
+   {(ent1 && ent1.length >0) && <button onClick={() => entityNew()}>New Entities</button> }
       <MapContainer
         center={defaultPosition}
         zoom={11}
