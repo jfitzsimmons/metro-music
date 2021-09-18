@@ -17,7 +17,7 @@ function App() {
         {/** <Search /> **/}
         <Map />
         <Preview />
-        <Form />
+       {/**  <Form />  */}
       </main>
     </>
   );

@@ -2,13 +2,6 @@ import { rndmRng } from './calculations';
 import { wavetable } from './wavetable';
 
 let audioContext = new (window.AudioContext)();
-let oscList = [];
-let mainGainNode: GainNode;
-let ambientPan = null;
-
-let customWaveform: PeriodicWave | null = null;
-let sineTerms = null;
-let cosineTerms = null;
 let volumeControl: HTMLInputElement | null
 volumeControl = document.querySelector<HTMLInputElement>("input[name='volume']");
 
@@ -124,27 +117,32 @@ export const noteFreq:Octaves = {
   }
 }
 
-const wave = audioContext.createPeriodicWave(wavetable.real, wavetable.imag);
+//const wave = audioContext.createPeriodicWave(wavetable.real, wavetable.imag);
 
 
 //this is the attack / release version of playing a tone
-export function playSweep(sweep: { osc: OscillatorNode, gainNode: GainNode, stereo: StereoPannerNode, freq: number; start: number; adsr: number; end: any; pan: number; }) {
-    sweep.osc.frequency.value = sweep.freq;
-    sweep.osc.detune.value = rndmRng(14,-14);
-    sweep.gainNode.gain.cancelScheduledValues(audioContext.currentTime + sweep.start);
-    sweep.gainNode.gain.setValueAtTime(0, audioContext.currentTime + sweep.start);
-    if (volumeControl !== null) sweep.gainNode.gain.linearRampToValueAtTime(parseInt(volumeControl.value), audioContext.currentTime + sweep.start + sweep.adsr);
-    sweep.gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + sweep.start + sweep.end - (sweep.end - sweep.adsr)*.7);
-    sweep.stereo.pan.value = sweep.pan;
+export function playSweep(sweep: { freq: number; start: number; adsr: number; end: any; pan: number; }) {
+  (volumeControl !== null) ? console.log(`volumeControl.value: ${volumeControl.value}`) : console.log('volume NULL');
+  console.log(sweep);
+  let osc: OscillatorNode = audioContext.createOscillator();
+  let gainNode: GainNode = audioContext.createGain();
+  let stereo: StereoPannerNode = audioContext.createStereoPanner();
+  osc.frequency.value = sweep.freq;
+  osc.detune.value = rndmRng(14,-14);
+  gainNode.gain.cancelScheduledValues(audioContext.currentTime + sweep.start);
+  gainNode.gain.setValueAtTime(0, audioContext.currentTime + sweep.start);
+  if (volumeControl !== null) gainNode.gain.linearRampToValueAtTime(parseInt(volumeControl.value), audioContext.currentTime + sweep.start + sweep.adsr);
+  gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + sweep.start + sweep.end - (sweep.end - sweep.adsr)*.7);
+  stereo.pan.value = sweep.pan;
 
-    sweep.osc.connect(sweep.gainNode).connect(sweep.stereo).connect(audioContext.destination);
+  osc.connect(gainNode).connect(stereo).connect(audioContext.destination);
 
-    sweep.osc.start(audioContext.currentTime + sweep.start);
-    sweep.osc.stop(audioContext.currentTime + sweep.start + sweep.end);
+  osc.start(audioContext.currentTime + sweep.start);
+  osc.stop(audioContext.currentTime + sweep.start + sweep.end);
 }
 
-export function changeVolume(event: any) {
-    if (volumeControl !== null) mainGainNode.gain.value = parseInt(volumeControl.value)
+export function changeVolume() {
+    //if (volumeControl !== null) mainGainNode.gain.value = parseInt(volumeControl.value)
   
   
  // playSweep(notes[3]["A#"], 1);

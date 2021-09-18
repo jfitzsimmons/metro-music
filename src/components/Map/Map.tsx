@@ -5,7 +5,7 @@ import { connect } from "react-redux";
 import { setPlacePreviewVisibility, setSelectedPlace, setAllPlaces } from "../../store/actions";
 import { IState, Entity } from "../../store/models";
 import AddMarker from "./AddMarker";
-import { playSweep, noteFreq, Octaves, Scale } from "../../utils/webAudio"
+import { playSweep, noteFreq, Octaves, Scale, changeVolume } from "../../utils/webAudio"
 
 import "./Map.css";
 import { countBy, distance, rndmRng } from "../../utils/calculations";
@@ -22,11 +22,11 @@ const Map = ({
   //const [polyLineProps, setPolyLineProps] = useState([]);
   const handler = fetch('/.netlify/functions/metro-updates').then((res) => res.json())
 
-  const [ ent1, setEnt1 ] = useState<Entity[]>([]);
+  const [ ent2, setEnt2 ] = useState<Entity[]>([]);
 
-  let audioContext = new (window.AudioContext)();
+  //let audioContext = new (window.AudioContext)();
 
-  let ent2: Entity[] = []; 
+  //let ent2: Entity[] = []; 
   let wrongIds = []
   let newVehicles = []
   let retiredVehicles = []
@@ -58,32 +58,37 @@ const Map = ({
 
   function test() {
     console.log("ENT 1 TEST");
-    console.log(ent1);
+    console.log(places);
+  }
+
+  function test2() {
+    console.log("ENT 2 TEST");
+    console.log(ent2);
   }
 
 function organizeVehicles() {
   let i2 = 0;
 
-  for (let i=0; i<ent1.length; i++) {
-      if (ent1[i].vehicle.vehicle.id !== ent2[i2].vehicle.vehicle.id) {
-          if (ent2.some(({ vehicle }) => vehicle.vehicle.id === ent1[i].vehicle.vehicle.id)) {
+  for (let i=0; i<places.length; i++) {
+      if (places[i].vehicle.vehicle.id !== ent2[i2].vehicle.vehicle.id) {
+          if (ent2.some(({ vehicle }) => vehicle.vehicle.id === places[i].vehicle.vehicle.id)) {
               //this woud mean the ent2 vehicle is new!!!
               //i2--?!?!
               newVehicles.push(ent2[i2]);
               i--;
           } else {
-              retiredVehicles.push(ent1[i]);
+              retiredVehicles.push(places[i]);
               i2--
           }
       } else {
           ent2[i2].movement = {
-            distance: distance(ent1[i].vehicle.position.latitude , ent1[i].vehicle.position.longitude, ent2[i2].vehicle.position.latitude, ent2[i2].vehicle.position.longitude),
-            timing: parseInt(ent2[i2].vehicle.timestamp) - parseInt(ent1[i].vehicle.timestamp),
-            mph: (distance(ent1[i].vehicle.position.latitude , ent1[i].vehicle.position.longitude, ent2[i2].vehicle.position.latitude, ent2[i2].vehicle.position.longitude) / (parseInt(ent2[i2].vehicle.timestamp) - parseInt(ent1[i].vehicle.timestamp))) *3600,
+            distance: distance(places[i].vehicle.position.latitude , places[i].vehicle.position.longitude, ent2[i2].vehicle.position.latitude, ent2[i2].vehicle.position.longitude),
+            timing: parseInt(ent2[i2].vehicle.timestamp) - parseInt(places[i].vehicle.timestamp),
+            mph: (distance(places[i].vehicle.position.latitude , places[i].vehicle.position.longitude, ent2[i2].vehicle.position.latitude, ent2[i2].vehicle.position.longitude) / (parseInt(ent2[i2].vehicle.timestamp) - parseInt(places[i].vehicle.timestamp))) *3600,
           };
           /** 
-          ent2[i2].movement.distance = distance(ent1[i].vehicle.position.latitude , ent1[i].vehicle.position.longitude, ent2[i2].vehicle.position.latitude, ent2[i2].vehicle.position.longitude)
-          ent2[i2].movement.timing = parseInt(ent2[i2].vehicle.timestamp) - parseInt(ent1[i].vehicle.timestamp) 
+          ent2[i2].movement.distance = distance(places[i].vehicle.position.latitude , places[i].vehicle.position.longitude, ent2[i2].vehicle.position.latitude, ent2[i2].vehicle.position.longitude)
+          ent2[i2].movement.timing = parseInt(ent2[i2].vehicle.timestamp) - parseInt(places[i].vehicle.timestamp) 
           ent2[i2].movement.mph = (ent2[i2].movement.distance / ent2[i2].movement.timing) *3600;
 */
       }
@@ -134,9 +139,6 @@ function organizeVehicles() {
 
       let sweep = {
           i,
-          osc: audioContext.createOscillator(),
-          gainNode: audioContext.createGain(),
-          stereo: audioContext.createStereoPanner(),
           start,
           end,
           freq: noteFreq[octave][note],
@@ -146,7 +148,7 @@ function organizeVehicles() {
 
       playSweep(sweep);
   })
- //ent1 = ent2;
+ //places = ent2;
 }
 
 
@@ -161,27 +163,35 @@ function organizeVehicles() {
 
   const entity = async () => {
     const a = await handler;
-    setEnt1(a);
+    //setplaces(a);
     //save old markers
     //check which markers actually updated.
-    console.log('entity1');
-    //ent1 = a;
-    console.log(JSON.stringify(a));
+    //console.log('entity1');
+    //places = a;
+    //console.log(JSON.stringify(a));
     setNewPlaceMarkers(a);
     test();
-    //ent1 = a;
+    //places = a;
   };
 
   const entityNew = async () => {
-    ent2 = await handler;
+    //!!! something like setOldPlaces(places)
+    //
+    setEnt2(places);
+
+
+
+    const b = await handler;
     //save old markers
     //check which markers actually updated.
-    console.log('ent1 in NEW');
-    console.log(ent1);
-    console.log('entity2');
+    //console.log('places in NEW');
+    //console.log(places);
+    //console.log('entity2');
     //ent2 = b;
-    console.log(JSON.stringify(ent2));
-    setNewPlaceMarkers(ent2);
+    //console.log(JSON.stringify(ent2));
+    setNewPlaceMarkers(b);
+    test2();
+
     
     organizeVehicles();
     
@@ -220,7 +230,16 @@ function organizeVehicles() {
 
   return (
     <div className="map__container">
-   {(ent1 && ent1.length >0) && <button onClick={() => entityNew()}>New Entities</button> }
+   {(places && places.length >0) && <button onClick={() => entityNew()}>New Entities</button> }
+    <div className="left">
+      <span>Volume: </span>
+      <input type="range" min="0.0" max="0.3" step="0.02"
+          defaultValue="0.15" list="volumes" name="volume" onChange={() => changeVolume()}/>
+      <datalist id="volumes">
+        <option value="0.0" label="Mute" />
+        <option value="0.3" label="100%" />
+      </datalist>
+    </div>
       <MapContainer
         center={defaultPosition}
         zoom={11}
