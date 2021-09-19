@@ -2,36 +2,32 @@ import { useEffect, useState } from "react";
 import { LatLngExpression } from "leaflet";
 import { MapContainer, TileLayer, Marker, Tooltip } from "react-leaflet";
 import { connect } from "react-redux";
-import { setPlacePreviewVisibility, setSelectedPlace, setAllPlaces } from "../../store/actions";
-import { IState, Entity } from "../../store/models";
+import { setPlacePreviewVisibility, setSelectedPlace, setAllPlaces, setPastPlaces } from "../../store/actions";
+import { IState, Entity, Vehicle } from "../../store/models";
 import AddMarker from "./AddMarker";
-import { playSweep, noteFreq, Octaves, Scale, changeVolume } from "../../utils/webAudio"
+import { playSweep, noteFreq, changeVolume } from "../../utils/webAudio"
 
 import "./Map.css";
 import { countBy, distance, rndmRng } from "../../utils/calculations";
 
 const Map = ({
   isVisible,
+  pastPlaces,
   places,
   selectedPlace,
   togglePreview,
   setPlaceForPreview,
+  setPastPlaces,
   setNewPlaceMarkers,
 }: any) => {
   const defaultPosition: LatLngExpression = [38.62727, -90.19789]; // stl position
-  //const [polyLineProps, setPolyLineProps] = useState([]);
   const handler = fetch('/.netlify/functions/metro-updates').then((res) => res.json())
-
-  const [ ent2, setEnt2 ] = useState<Entity[]>([]);
-
-  //let audioContext = new (window.AudioContext)();
-
-  //let ent2: Entity[] = []; 
-  let wrongIds = []
   let newVehicles = []
-  let retiredVehicles = []
-  //let i1 = 0;
-  //let i2 = 0;
+  let retiredVehicles = []  
+  let mphAvg = 16.385464299320347;
+  let longAvg= -90.24467340251744
+  let notesKey = ["C","E","G"] as const;
+
   function pickFrequency(f: number) {
     if (f < 38.5272947947) return 1;
     if (f >= 38.5272947947 && f < 38.5837567647) return 2;
@@ -42,12 +38,6 @@ const Map = ({
     return 1;
   }
   
-  let mphAvg = 16.385464299320347;
-  let longAvg= -90.24467340251744
-  let latavg = 0;
-  let notesKey = ["C","E","G"] as const;
-  let t = 1;
-  
   function getAdsr(mph: number) {
     let adsr = 1 - mph / mphAvg;
     if (adsr > 1) adsr = .99;
@@ -56,157 +46,93 @@ const Map = ({
     return adsr;
   }
 
-  function test() {
-    console.log("ENT 1 TEST");
-    console.log(places);
-  }
-
-  function test2() {
-    console.log("ENT 2 TEST");
-    console.log(ent2);
-  }
-
 function organizeVehicles() {
   let i2 = 0;
 
   for (let i=0; i<places.length; i++) {
-      if (places[i].vehicle.vehicle.id !== ent2[i2].vehicle.vehicle.id) {
-          if (ent2.some(({ vehicle }) => vehicle.vehicle.id === places[i].vehicle.vehicle.id)) {
-              //this woud mean the ent2 vehicle is new!!!
+      if (places[i].vehicle.vehicle.id !== pastPlaces[i2].vehicle.vehicle.id) {
+          if (pastPlaces.some(( vehicle: Vehicle ) => vehicle.vehicle.id === places[i].vehicle.vehicle.id)) {
+              //this woud mean the pastPlaces vehicle is new!!!
               //i2--?!?!
-              newVehicles.push(ent2[i2]);
+              newVehicles.push(pastPlaces[i2]);
               i--;
           } else {
               retiredVehicles.push(places[i]);
               i2--
           }
       } else {
-          ent2[i2].movement = {
-            distance: distance(places[i].vehicle.position.latitude , places[i].vehicle.position.longitude, ent2[i2].vehicle.position.latitude, ent2[i2].vehicle.position.longitude),
-            timing: parseInt(ent2[i2].vehicle.timestamp) - parseInt(places[i].vehicle.timestamp),
-            mph: (distance(places[i].vehicle.position.latitude , places[i].vehicle.position.longitude, ent2[i2].vehicle.position.latitude, ent2[i2].vehicle.position.longitude) / (parseInt(ent2[i2].vehicle.timestamp) - parseInt(places[i].vehicle.timestamp))) *3600,
+          pastPlaces[i2].movement = {
+            distance: distance(places[i].vehicle.position.latitude , places[i].vehicle.position.longitude, pastPlaces[i2].vehicle.position.latitude, pastPlaces[i2].vehicle.position.longitude),
+            timing: parseInt(pastPlaces[i2].vehicle.timestamp) - parseInt(places[i].vehicle.timestamp),
+            mph: (distance(places[i].vehicle.position.latitude , places[i].vehicle.position.longitude, pastPlaces[i2].vehicle.position.latitude, pastPlaces[i2].vehicle.position.longitude) / (parseInt(pastPlaces[i2].vehicle.timestamp) - parseInt(places[i].vehicle.timestamp))) *3600,
           };
-          /** 
-          ent2[i2].movement.distance = distance(places[i].vehicle.position.latitude , places[i].vehicle.position.longitude, ent2[i2].vehicle.position.latitude, ent2[i2].vehicle.position.longitude)
-          ent2[i2].movement.timing = parseInt(ent2[i2].vehicle.timestamp) - parseInt(places[i].vehicle.timestamp) 
-          ent2[i2].movement.mph = (ent2[i2].movement.distance / ent2[i2].movement.timing) *3600;
-*/
       }
 
       i2++
   }
 
-  let updatedRoutes = ent2.filter((vehicle) => (vehicle.movement && vehicle.movement.distance !== 0)).sort(function(x, y){
+  let updatedRoutes = pastPlaces.filter((vehicle: Entity) => (vehicle.movement && vehicle.movement.distance !== 0)).sort(function(x: Entity, y: Entity){
     return parseInt(x.vehicle.timestamp) - parseInt(y.vehicle.timestamp);
   });
 
+  console.log(`updatedRoutes`);
+  console.log(updatedRoutes);
+
   let timestampDupes: any = {}
+  timestampDupes = countBy(updatedRoutes, (r: { vehicle: { timestamp: number; }; }) => r.vehicle.timestamp);
 
-   timestampDupes = countBy(updatedRoutes, (r: { vehicle: { timestamp: number; }; }) => r.vehicle.timestamp);
-
-  let minTime = parseInt(updatedRoutes.sort(function(x, y){
+  let minTime = parseInt(updatedRoutes.sort(function(x: Entity, y: Entity){
       return parseInt(x.vehicle.timestamp) - parseInt(y.vehicle.timestamp);
   })[0].vehicle.timestamp);
 
   let count = 1;
 
-  updatedRoutes.forEach((r,i) => {
-      console.log(1/timestampDupes[r.vehicle.timestamp]);
-      
-      type OctaveKey = keyof typeof noteFreq;
+  updatedRoutes.forEach((r:Entity,i:number) => {      
+    type OctaveKey = keyof typeof noteFreq;
+    let octave: OctaveKey = pickFrequency(r.vehicle.position.latitude);
+    let noteChar = noteFreq[octave];
+    type NoteKey = keyof typeof noteChar;
+    let note: NoteKey = notesKey[Math.round(rndmRng(2,0))];
 
-      let octave: OctaveKey = pickFrequency(r.vehicle.position.latitude);
+    let start = 0;
+    if (updatedRoutes[i-1] && r.vehicle.timestamp === updatedRoutes[i-1].vehicle.timestamp) { 
+        start = parseInt(r.vehicle.timestamp)-minTime+(1/timestampDupes[r.vehicle.timestamp]*count) 
+        count++;
+    } else {
+        start = parseInt(r.vehicle.timestamp)-minTime;
+        count = 1;
+    }
+    let end: number = 0;
+    let adsr: number = 0;
+    if (r.movement && r.movement.distance) end = (r.movement.distance < .5) ? .5 : r.movement.distance;
+    end *=3;
+    if (r.movement && r.movement.mph) adsr = getAdsr(r.movement.mph);
 
-      let test = noteFreq[octave];
+    let sweep = {
+        i,
+        start,
+        end,
+        freq: noteFreq[octave][note],
+        pan: (Math.abs(longAvg) - Math.abs(r.vehicle.position.longitude))*3,
+        adsr: adsr * end,
+    }
 
-      type NoteKey = keyof typeof test;
-
-      let note: NoteKey = notesKey[Math.round(rndmRng(2,0))];
-
-      let start = 0;
-          if (updatedRoutes[i-1] && r.vehicle.timestamp === updatedRoutes[i-1].vehicle.timestamp) { 
-              start = parseInt(r.vehicle.timestamp)-minTime+(1/timestampDupes[r.vehicle.timestamp]*count) 
-              count++;
-          } else {
-              start = parseInt(r.vehicle.timestamp)-minTime;
-              count = 1;
-          }
-          let end: number = 0;
-          let adsr: number = 0;
-      if (r.movement && r.movement.distance) end = (r.movement.distance < .5) ? .5 : r.movement.distance;
-          end *=3;
-        if (r.movement && r.movement.mph) adsr = getAdsr(r.movement.mph);
-
-      let sweep = {
-          i,
-          start,
-          end,
-          freq: noteFreq[octave][note],
-          pan: (Math.abs(longAvg) - Math.abs(r.vehicle.position.longitude))*3,
-          adsr: adsr * end,
-      }
-
-      playSweep(sweep);
+    playSweep(sweep);
   })
- //places = ent2;
 }
-
-
-
-
-
-
-
-
-
-
 
   const entity = async () => {
     const a = await handler;
-    //setplaces(a);
-    //save old markers
-    //check which markers actually updated.
-    //console.log('entity1');
-    //places = a;
-    //console.log(JSON.stringify(a));
     setNewPlaceMarkers(a);
-    test();
-    //places = a;
   };
 
   const entityNew = async () => {
-    //!!! something like setOldPlaces(places)
-    //
-    setEnt2(places);
-
-
-
+    setPastPlaces(places);
     const b = await handler;
-    //save old markers
-    //check which markers actually updated.
-    //console.log('places in NEW');
-    //console.log(places);
-    //console.log('entity2');
-    //ent2 = b;
-    //console.log(JSON.stringify(ent2));
     setNewPlaceMarkers(b);
-    test2();
-
-    
-    organizeVehicles();
-    
   };
 
-  // probably need to steal my setInterval stuff from next.js blog TEST JPF
-  // so, onMount I need to get places with handler, and setAllPlaces with it on fulfillment of promise
-  //ex: add entity() to useEffect, in entity function, setAllPlaces with 'a' aka returned json
   useEffect(() => {
-   /**  
-    setPolyLineProps(places.reduce((prev: LatLngExpression[], curr: Place) => {
-      prev.push(curr.position);
-      return prev;
-    }, []));
-    **/
     entity();
   }, []);
 
@@ -231,6 +157,7 @@ function organizeVehicles() {
   return (
     <div className="map__container">
    {(places && places.length >0) && <button onClick={() => entityNew()}>New Entities</button> }
+   {(pastPlaces && pastPlaces.length >0) && <button onClick={() => organizeVehicles()}>Play music?</button> }
     <div className="left">
       <span>Volume: </span>
       <input type="range" min="0.0" max="0.3" step="0.02"
@@ -251,7 +178,6 @@ function organizeVehicles() {
           attribution='&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
-       {/**  <Polyline positions={polyLineProps} /> */}
         {places.map((place: Entity) => (
           <Marker
             key={place.id}
@@ -271,6 +197,7 @@ const mapStateToProps = (state: IState) => {
   const { places } = state;
   return {
     isVisible: places.placePreviewsIsVisible,
+    pastPlaces: places.pastPlaces,
     places: places.places,
     selectedPlace: places.selectedPlace,
   };
@@ -284,6 +211,8 @@ const mapDispatchToProps = (dispatch: any) => {
       dispatch(setSelectedPlace(payload)),
     setNewPlaceMarkers: (payload: Entity[]) =>
       dispatch(setAllPlaces(payload)),
+    setPastPlaces: (payload: Entity[]) =>
+      dispatch(setPastPlaces(payload)),
   };
 };
 

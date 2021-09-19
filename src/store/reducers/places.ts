@@ -1,4 +1,5 @@
 import {
+  SET_PAST_PLACES,
   SET_ALL_PLACES,
   SET_SELECTED_PLACE,
   SET_PLACE_PREVIEW_VISIBILITY,
@@ -7,11 +8,11 @@ import {
   ADD_NEW_PLACE,
 } from "../actions";
 import { PlaceState } from "../models";
-import { data } from "../../data";
 import { LatLngExpression } from "leaflet";
 
 const initialState: PlaceState = {
-  places: data,
+  pastPlaces: [],
+  places: [],
   selectedPlace: null,
   placePreviewsIsVisible: false,
   placeFormIsVisible: false,
@@ -23,6 +24,9 @@ const productsReducer = (
   action: { type: string; payload: any }
 ): PlaceState => {
   switch (action.type) {
+    case SET_PAST_PLACES: {
+      return { ...state, pastPlaces: action.payload };
+    }
     case SET_ALL_PLACES: {
       return { ...state, places: action.payload };
     }

@@ -6,6 +6,7 @@ export interface SearchState {
 
 export interface PlaceState {
   places: Entity[];
+  pastPlaces: Entity[];
   selectedPlace: Entity | null;
   placePreviewsIsVisible: boolean;
   placeFormIsVisible: boolean;

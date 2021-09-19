@@ -1,5 +1,5 @@
 import { rndmRng } from './calculations';
-import { wavetable } from './wavetable';
+//import { wavetable } from './wavetable';
 
 let audioContext = new (window.AudioContext)();
 let volumeControl: HTMLInputElement | null
@@ -131,7 +131,9 @@ export function playSweep(sweep: { freq: number; start: number; adsr: number; en
   osc.detune.value = rndmRng(14,-14);
   gainNode.gain.cancelScheduledValues(audioContext.currentTime + sweep.start);
   gainNode.gain.setValueAtTime(0, audioContext.currentTime + sweep.start);
-  if (volumeControl !== null) gainNode.gain.linearRampToValueAtTime(parseInt(volumeControl.value), audioContext.currentTime + sweep.start + sweep.adsr);
+  //if (volumeControl !== null) gainNode.gain.linearRampToValueAtTime(parseInt(volumeControl.value), audioContext.currentTime + sweep.start + sweep.adsr);
+  gainNode.gain.linearRampToValueAtTime(.2, audioContext.currentTime + sweep.start + sweep.adsr);
+
   gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + sweep.start + sweep.end - (sweep.end - sweep.adsr)*.7);
   stereo.pan.value = sweep.pan;
 
