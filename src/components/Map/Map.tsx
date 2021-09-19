@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { LatLngExpression } from "leaflet";
 import { MapContainer, TileLayer, Marker, Tooltip } from "react-leaflet";
 import { connect } from "react-redux";
@@ -121,10 +121,7 @@ function organizeVehicles() {
   })
 }
 
-  const entity = async () => {
-    const a = await handler;
-    setNewPlaceMarkers(a);
-  };
+ 
 
   const entityNew = async () => {
     setPastPlaces(places);
@@ -133,8 +130,12 @@ function organizeVehicles() {
   };
 
   useEffect(() => {
+    const entity = async () => {
+      const a = await handler;
+      setNewPlaceMarkers(a);
+    };
     entity();
-  }, []);
+  }, [handler, setNewPlaceMarkers]);
 
   const showPreview = (place: Entity) => {
     if (isVisible) {
