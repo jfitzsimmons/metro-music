@@ -9,6 +9,7 @@ import { playSweep, noteFreq, changeVolume } from "../../utils/webAudio"
 
 import "./Map.css";
 import { countBy, distance, rndmRng } from "../../utils/calculations";
+const handler = fetch('/.netlify/functions/metro-updates').then((res) => res.json())
 
 const Map = ({
   isVisible,
@@ -21,7 +22,6 @@ const Map = ({
   setNewPlaceMarkers,
 }: any) => {
   const defaultPosition: LatLngExpression = [38.62727, -90.19789]; // stl position
-  const handler = fetch('/.netlify/functions/metro-updates').then((res) => res.json())
   let newVehicles = []
   let retiredVehicles = []  
   let mphAvg = 16.385464299320347;
@@ -120,22 +120,30 @@ function organizeVehicles() {
     playSweep(sweep);
   })
 }
-
- 
-
+/**
+  const entity = async () => {
+    const a = await handler;
+    setNewPlaceMarkers(a);
+  };
+ */
   const entityNew = async () => {
+    const handler2 = fetch('/.netlify/functions/metro-updates').then((res) => res.json())
     setPastPlaces(places);
-    const b = await handler;
+    const b = await handler2;
     setNewPlaceMarkers(b);
   };
-
+/** 
+  useEffect(() => {
+    entity();
+  }, []);
+*/
   useEffect(() => {
     const entity = async () => {
       const a = await handler;
       setNewPlaceMarkers(a);
     };
     entity();
-  }, [handler, setNewPlaceMarkers]);
+  }, [setNewPlaceMarkers]);
 
   const showPreview = (place: Entity) => {
     if (isVisible) {
