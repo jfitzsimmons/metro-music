@@ -3,12 +3,12 @@ import { LatLngExpression } from "leaflet";
 import { MapContainer, TileLayer, Marker, Tooltip } from "react-leaflet";
 import { connect } from "react-redux";
 import { setPlacePreviewVisibility, setSelectedPlace, setAllPlaces, setPastPlaces } from "../../store/actions";
-import { IState, Entity, Vehicle } from "../../store/models";
-import AddMarker from "./AddMarker";
+import { IState, Entity } from "../../store/models";
+//import AddMarker from "./AddMarker";
 import { playSweep, noteFreq, changeVolume } from "../../utils/webAudio"
-
 import "./Map.css";
 import { countBy, distance, rndmRng } from "../../utils/calculations";
+
 const handler = fetch('/.netlify/functions/metro-updates').then((res) => res.json())
 
 const Map = ({
@@ -21,9 +21,9 @@ const Map = ({
   setPastPlaces,
   setNewPlaceMarkers,
 }: any) => {
-  const defaultPosition: LatLngExpression = [38.62727, -90.19789]; // stl position
-  let newVehicles = []
-  let retiredVehicles = []  
+  const defaultPosition: LatLngExpression = [38.62727, -90.19789];
+  let newVehicles: Entity[] = []
+  let retiredVehicles: Entity[] = []  
   let mphAvg = 16.385464299320347;
   let longAvg= -90.24467340251744
   let notesKey = ["C","E","G"] as const;
@@ -49,29 +49,40 @@ const Map = ({
 function organizeVehicles() {
   let i2 = 0;
 
-  for (let i=0; i<places.length; i++) {
-      if (places[i].vehicle.vehicle.id !== pastPlaces[i2].vehicle.vehicle.id) {
-          if (pastPlaces.some(( vehicle: Vehicle ) => vehicle.vehicle.id === places[i].vehicle.vehicle.id)) {
-              //this woud mean the pastPlaces vehicle is new!!!
-              //i2--?!?!
-              newVehicles.push(pastPlaces[i2]);
+  console.log(`places`);
+  console.log(places);
+
+  console.log(`pastPlaces`);
+  console.log(pastPlaces);
+
+  for (let i=0; i<pastPlaces.length; i++) {
+      if (pastPlaces[i].vehicle.vehicle.id !== places[i2].vehicle.vehicle.id) {
+          if (places.some(( vehicle: Entity ) => vehicle.vehicle.vehicle.id === pastPlaces[i].vehicle.vehicle.id)) {
+              newVehicles.push(places[i2]);
               i--;
           } else {
-              retiredVehicles.push(places[i]);
+              retiredVehicles.push(pastPlaces[i]);
               i2--
           }
       } else {
-          pastPlaces[i2].movement = {
-            distance: distance(places[i].vehicle.position.latitude , places[i].vehicle.position.longitude, pastPlaces[i2].vehicle.position.latitude, pastPlaces[i2].vehicle.position.longitude),
-            timing: parseInt(pastPlaces[i2].vehicle.timestamp) - parseInt(places[i].vehicle.timestamp),
-            mph: (distance(places[i].vehicle.position.latitude , places[i].vehicle.position.longitude, pastPlaces[i2].vehicle.position.latitude, pastPlaces[i2].vehicle.position.longitude) / (parseInt(pastPlaces[i2].vehicle.timestamp) - parseInt(places[i].vehicle.timestamp))) *3600,
-          };
+        places[i2].movement = {
+          distance: distance(pastPlaces[i].vehicle.position.latitude , pastPlaces[i].vehicle.position.longitude, places[i2].vehicle.position.latitude, places[i2].vehicle.position.longitude),
+          timing: parseInt(places[i2].vehicle.timestamp) - parseInt(pastPlaces[i].vehicle.timestamp),
+          mph: (distance(pastPlaces[i].vehicle.position.latitude , pastPlaces[i].vehicle.position.longitude, places[i2].vehicle.position.latitude, places[i2].vehicle.position.longitude) / (parseInt(places[i2].vehicle.timestamp)- parseInt(pastPlaces[i].vehicle.timestamp))) *3600,
+        };
       }
 
       i2++
+      console.log(`i2: ${i2}`);
   }
 
-  let updatedRoutes = pastPlaces.filter((vehicle: Entity) => (vehicle.movement && vehicle.movement.distance !== 0)).sort(function(x: Entity, y: Entity){
+  console.log(`retiredVehicles`);
+  console.log(retiredVehicles);
+
+  console.log(`newVehicles`);
+  console.log(newVehicles);
+
+  let updatedRoutes = places.filter((vehicle: Entity) => (vehicle.movement && vehicle.movement.distance !== 0)).sort(function(x: Entity, y: Entity){
     return parseInt(x.vehicle.timestamp) - parseInt(y.vehicle.timestamp);
   });
 
@@ -119,24 +130,21 @@ function organizeVehicles() {
 
     playSweep(sweep);
   })
+  let timeout: number = (parseInt(updatedRoutes[updatedRoutes.length-1].vehicle.timestamp)-minTime) * 1000;
+  setTimeout(function () {
+    entityNew();
+    console.log(`tiemout`);
+    }, timeout);
 }
-/**
-  const entity = async () => {
-    const a = await handler;
-    setNewPlaceMarkers(a);
-  };
- */
+
   const entityNew = async () => {
+    console.log(`entityNEW`);
     const handler2 = fetch('/.netlify/functions/metro-updates').then((res) => res.json())
     setPastPlaces(places);
     const b = await handler2;
     setNewPlaceMarkers(b);
   };
-/** 
-  useEffect(() => {
-    entity();
-  }, []);
-*/
+
   useEffect(() => {
     const entity = async () => {
       const a = await handler;
@@ -165,17 +173,17 @@ function organizeVehicles() {
 
   return (
     <div className="map__container">
-   {(places && places.length >0) && <button onClick={() => entityNew()}>New Entities</button> }
-   {(pastPlaces && pastPlaces.length >0) && <button onClick={() => organizeVehicles()}>Play music?</button> }
-    <div className="left">
-      <span>Volume: </span>
-      <input type="range" min="0.0" max="0.3" step="0.02"
-          defaultValue="0.15" list="volumes" name="volume" onChange={() => changeVolume()}/>
-      <datalist id="volumes">
-        <option value="0.0" label="Mute" />
-        <option value="0.3" label="100%" />
-      </datalist>
-    </div>
+      {(places && places.length >0) && <button onClick={() => entityNew()}>New Entities</button> }
+      {(pastPlaces && pastPlaces.length >0) && <button onClick={() => organizeVehicles()}>Play music?</button> }
+      <div className="left">
+        <span>Volume: </span>
+        <input type="range" min="0.0" max="0.3" step="0.02"
+            defaultValue="0.15" list="volumes" name="volume" onChange={() => changeVolume()}/>
+        <datalist id="volumes">
+          <option value="0.0" label="Mute" />
+          <option value="0.3" label="100%" />
+        </datalist>
+      </div>
       <MapContainer
         center={defaultPosition}
         zoom={11}
@@ -196,7 +204,7 @@ function organizeVehicles() {
             <Tooltip>{place.vehicle.vehicle.label}</Tooltip>
           </Marker>
         ))}
-        <AddMarker />
+        {/** <AddMarker /> */}
       </MapContainer>
     </div>
   );

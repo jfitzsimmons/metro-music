@@ -119,8 +119,6 @@ export const noteFreq:Octaves = {
 
 //const wave = audioContext.createPeriodicWave(wavetable.real, wavetable.imag);
 
-
-//this is the attack / release version of playing a tone
 export function playSweep(sweep: { freq: number; start: number; adsr: number; end: any; pan: number; }) {
   (volumeControl !== null) ? console.log(`volumeControl.value: ${volumeControl.value}`) : console.log('volume NULL');
   console.log(sweep);
@@ -145,7 +143,4 @@ export function playSweep(sweep: { freq: number; start: number; adsr: number; en
 
 export function changeVolume() {
     //if (volumeControl !== null) mainGainNode.gain.value = parseInt(volumeControl.value)
-  
-  
- // playSweep(notes[3]["A#"], 1);
 }
