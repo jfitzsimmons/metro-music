@@ -2,6 +2,7 @@ import { LatLngExpression } from "leaflet";
 
 export interface SearchState {
   searchIsVisible: boolean;
+  sweepTime: number;
 }
 
 export interface PlaceState {
@@ -11,6 +12,7 @@ export interface PlaceState {
   placePreviewsIsVisible: boolean;
   placeFormIsVisible: boolean;
   prePlacePosition: LatLngExpression;
+  initial: boolean;
 }
 
 export interface IState {

@@ -1,8 +1,8 @@
-import { useEffect } from "react";
+import { useEffect,useCallback,useRef, useState } from "react";
 import { LatLngExpression } from "leaflet";
 import { MapContainer, TileLayer, Marker, Tooltip } from "react-leaflet";
 import { connect } from "react-redux";
-import { setPlacePreviewVisibility, setSelectedPlace, setAllPlaces, setPastPlaces } from "../../store/actions";
+import { setPlacePreviewVisibility, setSelectedPlace, setAllPlaces, setPastPlaces, setSweepTime } from "../../store/actions";
 import { IState, Entity } from "../../store/models";
 //import AddMarker from "./AddMarker";
 import { playSweep, noteFreq, changeVolume } from "../../utils/webAudio"
@@ -10,51 +10,41 @@ import "./Map.css";
 import { countBy, distance, rndmRng } from "../../utils/calculations";
 
 const handler = fetch('/.netlify/functions/metro-updates').then((res) => res.json())
-
-const Map = ({
-  isVisible,
-  pastPlaces,
-  places,
-  selectedPlace,
-  togglePreview,
-  setPlaceForPreview,
-  setPastPlaces,
-  setNewPlaceMarkers,
-}: any) => {
-  const defaultPosition: LatLngExpression = [38.62727, -90.19789];
-  let newVehicles: Entity[] = []
-  let retiredVehicles: Entity[] = []  
-  let mphAvg = 16.385464299320347;
-  let longAvg= -90.24467340251744
-  let notesKey = ["C","E","G"] as const;
-
-  function pickFrequency(f: number) {
-    if (f < 38.5272947947) return 1;
-    if (f >= 38.5272947947 && f < 38.5837567647) return 2;
-    if (f >= 38.5837567647 && f < 38.6402187347) return 3;
-    if (f >= 38.6402187347 && f < 38.6966807047) return 4;
-    if (f >= 38.6966807047 && f < 38.7531426747) return 5;
-    if (f >= 38.7531426747) return 6;
-    return 1;
-  }
+let mphAvg = 16.385464299320347;
+let notesKey = ["C","E","G"] as const;
+let newVehicles: Entity[] = []
+let retiredVehicles: Entity[] = []  
+let longAvg= -90.24467340251744
   
-  function getAdsr(mph: number) {
-    let adsr = 1 - mph / mphAvg;
-    if (adsr > 1) adsr = .99;
-    if (adsr < -1) adsr = -.99;
-    if (adsr < 0) adsr++;
-    return adsr;
-  }
 
-function organizeVehicles() {
+function pickFrequency(f: number) {
+  if (f < 38.5272947947) return 1;
+  if (f >= 38.5272947947 && f < 38.5837567647) return 2;
+  if (f >= 38.5837567647 && f < 38.6402187347) return 3;
+  if (f >= 38.6402187347 && f < 38.6966807047) return 4;
+  if (f >= 38.6966807047 && f < 38.7531426747) return 5;
+  if (f >= 38.7531426747) return 6;
+  return 1;
+}
+
+
+function getAdsr(mph: number) {
+  let adsr = 1 - mph / mphAvg;
+  if (adsr > 1) adsr = .99;
+  if (adsr < -1) adsr = -.99;
+  if (adsr < 0) adsr++;
+  return adsr;
+}
+
+const organizeVehicles = (places: Entity[], pastPlaces: Entity[]) => {
   let i2 = 0;
-
+/** 
   console.log(`places`);
   console.log(places);
 
   console.log(`pastPlaces`);
   console.log(pastPlaces);
-
+*/
   for (let i=0; i<pastPlaces.length; i++) {
       if (pastPlaces[i].vehicle.vehicle.id !== places[i2].vehicle.vehicle.id) {
           if (places.some(( vehicle: Entity ) => vehicle.vehicle.vehicle.id === pastPlaces[i].vehicle.vehicle.id)) {
@@ -73,22 +63,21 @@ function organizeVehicles() {
       }
 
       i2++
-      console.log(`i2: ${i2}`);
   }
-
+/** 
   console.log(`retiredVehicles`);
   console.log(retiredVehicles);
 
   console.log(`newVehicles`);
   console.log(newVehicles);
-
+*/
   let updatedRoutes = places.filter((vehicle: Entity) => (vehicle.movement && vehicle.movement.distance !== 0)).sort(function(x: Entity, y: Entity){
     return parseInt(x.vehicle.timestamp) - parseInt(y.vehicle.timestamp);
   });
-
+/** 
   console.log(`updatedRoutes`);
   console.log(updatedRoutes);
-
+*/
   let timestampDupes: any = {}
   timestampDupes = countBy(updatedRoutes, (r: { vehicle: { timestamp: number; }; }) => r.vehicle.timestamp);
 
@@ -130,28 +119,103 @@ function organizeVehicles() {
 
     playSweep(sweep);
   })
+  //return timeout and call setsweep there 
+  //dont need this setTimeout anymore, handled in useEffect
   let timeout: number = (parseInt(updatedRoutes[updatedRoutes.length-1].vehicle.timestamp)-minTime) * 1000;
-  setTimeout(function () {
-    entityNew();
-    console.log(`tiemout`);
-    }, timeout);
+  //pass timeout to entityNew()
+  //put setTimeout in EntityNew
+  //console.log(`return timeout to setSweepTime: ${timeout}`);
+
+
+  return timeout;
 }
 
-  const entityNew = async () => {
-    console.log(`entityNEW`);
-    const handler2 = fetch('/.netlify/functions/metro-updates').then((res) => res.json())
-    setPastPlaces(places);
-    const b = await handler2;
-    setNewPlaceMarkers(b);
-  };
+const Map = ({
+  isVisible,
+  pastPlaces,
+  places,
+  initial,
+  selectedPlace,
+  togglePreview,
+  sweepTime,
+  setPlaceForPreview,
+  setPastPlaces,
+  setNewPlaceMarkers,
+  setSweepTime,
+}: any) => {
+  const timeout:  { current: NodeJS.Timeout | null } = useRef(null);
+  const [forceStop, setForceStop] = useState<boolean>(false);
+  const defaultPosition: LatLngExpression = [38.62727, -90.19789];
 
   useEffect(() => {
+    //console.log('past places ALWAYS');
+    if (places && places.length > 0) {
+      //console.log('past places IF CONDITION');
+      setPastPlaces(places);
+/** 
+      console.log(`places`);
+      console.log(places);
+
+      console.log(`pastPlaces`);
+      console.log(pastPlaces);
+      */
+    }
+  }, [places, setPastPlaces]);
+
+
+
+  useEffect(() => {
+    //console.log('init');
     const entity = async () => {
       const a = await handler;
-      setNewPlaceMarkers(a);
+      setNewPlaceMarkers(a,true);
     };
     entity();
-  }, [setNewPlaceMarkers]);
+    setSweepTime(15000);
+  }, [setNewPlaceMarkers, setSweepTime]);
+
+  useEffect(() => {
+    //console.log(`initial intial: ${initial} | forceStop: ${forceStop}`);
+    if (!initial && !forceStop && places !== pastPlaces) {
+      //console.log(`if not initial: ${initial}`);
+      setSweepTime(organizeVehicles(places, pastPlaces));
+    }
+  }, [initial, places, setSweepTime, forceStop, pastPlaces]);
+ 
+  const loadNewData = useCallback((timer) => {
+    timeout.current =  setTimeout(function(){
+    //console.log('loadNewData Entered');
+    const entityNew = async () => {
+      //console.log(`entityNEW places updated`);
+      const handler2 = fetch('/.netlify/functions/metro-updates').then((res) => res.json())
+      const b = await handler2;
+      //add argument noninit?  newdata? = true? 
+      //then have use effect htat checks for that redux prop
+      //fire organizeVehicles?
+      // setting newplaces, needs to include old places???
+      // probably the way to go.
+      setNewPlaceMarkers(b, false);
+    };
+    entityNew();
+    if (timeout.current) {
+      //console.log('clear timeout exists');
+      clearTimeout(timeout.current);
+      //organizeVehicles();
+    };
+  }, timer);
+  },[setNewPlaceMarkers]);
+
+  useEffect(() => {
+    //console.log(`to: ${sweepTime} ONLY ONCE`);
+    if (!sweepTime || sweepTime <= 0) {
+     // console.log('to= 0');
+      return;
+    } else {
+     // console.log(`sweepTime changed: ${sweepTime}`);
+      loadNewData(sweepTime);
+    }
+    
+  }, [loadNewData, sweepTime]);
 
   const showPreview = (place: Entity) => {
     if (isVisible) {
@@ -173,8 +237,9 @@ function organizeVehicles() {
 
   return (
     <div className="map__container">
-      {(places && places.length >0) && <button onClick={() => entityNew()}>New Entities</button> }
-      {(pastPlaces && pastPlaces.length >0) && <button onClick={() => organizeVehicles()}>Play music?</button> }
+      {/**(places && places.length >0) && <button onClick={() => entityNew()}>New Entities</button> */}
+      {/**(pastPlaces && pastPlaces.length >0) && <button onClick={() => organizeVehicles()}>Play music?</button> **/ }
+      { <button onClick={() => setForceStop(true)}>Force Stop</button> }
       <div className="left">
         <span>Volume: </span>
         <input type="range" min="0.0" max="0.3" step="0.02"
@@ -211,12 +276,14 @@ function organizeVehicles() {
 };
 
 const mapStateToProps = (state: IState) => {
-  const { places } = state;
+  const { places, search } = state;
   return {
     isVisible: places.placePreviewsIsVisible,
     pastPlaces: places.pastPlaces,
     places: places.places,
+    initial: places.initial,
     selectedPlace: places.selectedPlace,
+    sweepTime: search.sweepTime,
   };
 };
 
@@ -226,10 +293,12 @@ const mapDispatchToProps = (dispatch: any) => {
       dispatch(setPlacePreviewVisibility(payload)),
     setPlaceForPreview: (payload: Entity) =>
       dispatch(setSelectedPlace(payload)),
-    setNewPlaceMarkers: (payload: Entity[]) =>
-      dispatch(setAllPlaces(payload)),
+    setNewPlaceMarkers: (payload: Entity[], initial: boolean) =>
+      dispatch(setAllPlaces(payload,initial)),
     setPastPlaces: (payload: Entity[]) =>
       dispatch(setPastPlaces(payload)),
+    setSweepTime: (payload: number) =>
+      dispatch(setSweepTime(payload)),
   };
 };
 

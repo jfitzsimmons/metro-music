@@ -9,14 +9,18 @@ export const SET_PLACE_FORM_VISIBILITY = "SET_PLACE_FORM_VISIBILITY";
 export const SET_PRE_PLACE_LOCATION = "SET_PRE_PLACE_LOCATION";
 export const ADD_NEW_PLACE = "ADD_NEW_PLACE";
 
+
 export const setPastPlaces = (pastPlaces: Entity[]) => ({
   type: SET_PAST_PLACES,
   payload: pastPlaces,
 });
 
-export const setAllPlaces = (places: Entity[]) => ({
+export const setAllPlaces = (places: Entity[], initial: boolean) => ({
   type: SET_ALL_PLACES,
-  payload: places,
+  payload: {
+    places,
+    initial,
+  }
 });
 
 export const setSelectedPlace = (place: Entity) => ({
@@ -43,3 +47,5 @@ export const addNewPlace = (payload: Place) => ({
   type: ADD_NEW_PLACE,
   payload,
 });
+
+

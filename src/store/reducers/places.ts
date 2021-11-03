@@ -17,6 +17,7 @@ const initialState: PlaceState = {
   placePreviewsIsVisible: false,
   placeFormIsVisible: false,
   prePlacePosition: (null as unknown) as LatLngExpression,
+  initial: true, 
 };
 
 const productsReducer = (
@@ -28,7 +29,7 @@ const productsReducer = (
       return { ...state, pastPlaces: action.payload };
     }
     case SET_ALL_PLACES: {
-      return { ...state, places: action.payload };
+      return { ...state, places: action.payload.places, initial: action.payload.initial };
     }
     case SET_SELECTED_PLACE: {
       return { ...state, selectedPlace: action.payload };
@@ -45,6 +46,7 @@ const productsReducer = (
     case ADD_NEW_PLACE: {
       return { ...state, places: [...state.places, action.payload] };
     }
+
     default: {
       return state;
     }
