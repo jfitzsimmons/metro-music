@@ -1,8 +1,8 @@
 import { useEffect,useCallback,useRef, useState } from "react";
-import { LatLngExpression } from "leaflet";
+import L, { LatLngExpression } from "leaflet";
 import { MapContainer, TileLayer, Marker, Tooltip } from "react-leaflet";
 import { connect } from "react-redux";
-import { setPlacePreviewVisibility, setSelectedPlace, setAllPlaces, setPastPlaces, setSweepTime } from "../../store/actions";
+import { setPlacePreviewVisibility, setSelectedPlace, setAllPlaces } from "../../store/actions";
 import { IState, Entity } from "../../store/models";
 //import AddMarker from "./AddMarker";
 import { playSweep, noteFreq, changeVolume } from "../../utils/webAudio"
@@ -11,10 +11,25 @@ import { countBy, distance, rndmRng } from "../../utils/calculations";
 
 const handler = fetch('/.netlify/functions/metro-updates').then((res) => res.json())
 let mphAvg = 16.385464299320347;
-let notesKey = ["C","E","G"] as const;
+let notesKey = [["D","F","G#","C"],["D","F","G#","B"],["C","D#","G","B"],["C","D#","G","B"]] as const;
 let newVehicles: Entity[] = []
 let retiredVehicles: Entity[] = []  
 let longAvg= -90.24467340251744
+let progress = 0;
+let multiple = 0;
+let chord = 0;
+let start = 0;
+let concertStart = 0;
+//let concertStart = true;
+
+
+  function usePrevious<T>(value: T): T {
+    const ref = useRef<T>();
+    useEffect(() => {
+      ref.current = value;
+    }, [value]);
+    return ref.current as T;
+  }
   
 
 function pickFrequency(f: number) {
@@ -38,13 +53,7 @@ function getAdsr(mph: number) {
 
 const organizeVehicles = (places: Entity[], pastPlaces: Entity[]) => {
   let i2 = 0;
-/** 
-  console.log(`places`);
-  console.log(places);
 
-  console.log(`pastPlaces`);
-  console.log(pastPlaces);
-*/
   for (let i=0; i<pastPlaces.length; i++) {
       if (pastPlaces[i].vehicle.vehicle.id !== places[i2].vehicle.vehicle.id) {
           if (places.some(( vehicle: Entity ) => vehicle.vehicle.vehicle.id === pastPlaces[i].vehicle.vehicle.id)) {
@@ -74,6 +83,13 @@ const organizeVehicles = (places: Entity[], pastPlaces: Entity[]) => {
   let updatedRoutes = places.filter((vehicle: Entity) => (vehicle.movement && vehicle.movement.distance !== 0)).sort(function(x: Entity, y: Entity){
     return parseInt(x.vehicle.timestamp) - parseInt(y.vehicle.timestamp);
   });
+
+
+  if (updatedRoutes.length === 0 || !updatedRoutes) {
+    console.log('NO UPDATED ROUTES');
+    console.dir(updatedRoutes);
+    return 2000;
+  }
 /** 
   console.log(`updatedRoutes`);
   console.log(updatedRoutes);
@@ -87,14 +103,25 @@ const organizeVehicles = (places: Entity[], pastPlaces: Entity[]) => {
 
   let count = 1;
 
-  updatedRoutes.forEach((r:Entity,i:number) => {      
+  if (concertStart === 0) concertStart = minTime;
+
+  console.log(`minTime: ${minTime} | count: ${count} | concertStart: ${concertStart}`);
+
+  updatedRoutes.forEach((r:Entity,i:number) => {  
+    progress = parseInt(r.vehicle.timestamp)-concertStart;
+    //progress += (updatedRoutes[i-1]) ?
+    multiple = Math.floor(progress/8)
+    chord = (progress >= 8) ? Math.floor((progress - 8*multiple)/2) : Math.floor(progress/2);
+
+    console.log(`progress: ${progress} | multiple: ${multiple} | chord: ${chord}`);
+
     type OctaveKey = keyof typeof noteFreq;
     let octave: OctaveKey = pickFrequency(r.vehicle.position.latitude);
     let noteChar = noteFreq[octave];
     type NoteKey = keyof typeof noteChar;
-    let note: NoteKey = notesKey[Math.round(rndmRng(2,0))];
+    let note: NoteKey = notesKey[chord][Math.round(rndmRng(3,0))];
 
-    let start = 0;
+    //let prevStart = start;
     if (updatedRoutes[i-1] && r.vehicle.timestamp === updatedRoutes[i-1].vehicle.timestamp) { 
         start = parseInt(r.vehicle.timestamp)-minTime+(1/timestampDupes[r.vehicle.timestamp]*count) 
         count++;
@@ -102,6 +129,16 @@ const organizeVehicles = (places: Entity[], pastPlaces: Entity[]) => {
         start = parseInt(r.vehicle.timestamp)-minTime;
         count = 1;
     }
+
+    /**
+     * need to start at progress = 0
+     * multiple = Math.floor(start/8) +1
+     * if start >= 8 ? progress = start - 8*multiple
+     * 
+     * can minTime be used?
+     */
+
+
     let end: number = 0;
     let adsr: number = 0;
     if (r.movement && r.movement.distance) end = (r.movement.distance < .5) ? .5 : r.movement.distance;
@@ -109,113 +146,72 @@ const organizeVehicles = (places: Entity[], pastPlaces: Entity[]) => {
     if (r.movement && r.movement.mph) adsr = getAdsr(r.movement.mph);
 
     let sweep = {
-        i,
-        start,
-        end,
-        freq: noteFreq[octave][note],
-        pan: (Math.abs(longAvg) - Math.abs(r.vehicle.position.longitude))*3,
-        adsr: adsr * end,
+     // progress,
+      i,
+      start,
+      end,
+      freq: noteFreq[octave][note],
+      pan: (Math.abs(longAvg) - Math.abs(r.vehicle.position.longitude))*3,
+      adsr: adsr * end,
     }
 
     playSweep(sweep);
-  })
-  //return timeout and call setsweep there 
-  //dont need this setTimeout anymore, handled in useEffect
-  let timeout: number = (parseInt(updatedRoutes[updatedRoutes.length-1].vehicle.timestamp)-minTime) * 1000;
-  //pass timeout to entityNew()
-  //put setTimeout in EntityNew
-  //console.log(`return timeout to setSweepTime: ${timeout}`);
+  });
 
+  let timeout: number = (parseInt(updatedRoutes[updatedRoutes.length-1].vehicle.timestamp)-minTime) * 1000;
 
   return timeout;
 }
 
 const Map = ({
   isVisible,
-  pastPlaces,
   places,
   initial,
   selectedPlace,
   togglePreview,
-  sweepTime,
   setPlaceForPreview,
-  setPastPlaces,
   setNewPlaceMarkers,
-  setSweepTime,
 }: any) => {
   const timeout:  { current: NodeJS.Timeout | null } = useRef(null);
   const [forceStop, setForceStop] = useState<boolean>(false);
   const defaultPosition: LatLngExpression = [38.62727, -90.19789];
+  const prevPlaces = usePrevious(places);
 
-  useEffect(() => {
-    //console.log('past places ALWAYS');
-    if (places && places.length > 0) {
-      //console.log('past places IF CONDITION');
-      setPastPlaces(places);
-/** 
-      console.log(`places`);
-      console.log(places);
-
-      console.log(`pastPlaces`);
-      console.log(pastPlaces);
-      */
-    }
-  }, [places, setPastPlaces]);
-
-
-
-  useEffect(() => {
-    //console.log('init');
-    const entity = async () => {
-      const a = await handler;
-      setNewPlaceMarkers(a,true);
-    };
-    entity();
-    setSweepTime(15000);
-  }, [setNewPlaceMarkers, setSweepTime]);
-
-  useEffect(() => {
-    //console.log(`initial intial: ${initial} | forceStop: ${forceStop}`);
-    if (!initial && !forceStop && places !== pastPlaces) {
-      //console.log(`if not initial: ${initial}`);
-      setSweepTime(organizeVehicles(places, pastPlaces));
-    }
-  }, [initial, places, setSweepTime, forceStop, pastPlaces]);
- 
   const loadNewData = useCallback((timer) => {
+    //console.log(`useCallback - loadNewData`);
     timeout.current =  setTimeout(function(){
-    //console.log('loadNewData Entered');
-    const entityNew = async () => {
-      //console.log(`entityNEW places updated`);
-      const handler2 = fetch('/.netlify/functions/metro-updates').then((res) => res.json())
-      const b = await handler2;
-      //add argument noninit?  newdata? = true? 
-      //then have use effect htat checks for that redux prop
-      //fire organizeVehicles?
-      // setting newplaces, needs to include old places???
-      // probably the way to go.
-      setNewPlaceMarkers(b, false);
-    };
-    entityNew();
-    if (timeout.current) {
-      //console.log('clear timeout exists');
-      clearTimeout(timeout.current);
-      //organizeVehicles();
-    };
-  }, timer);
+      const entityNew = async () => {
+        const handler2 = fetch('/.netlify/functions/metro-updates').then((res) => res.json())
+        const b = await handler2;
+        setNewPlaceMarkers(b, false);
+      };
+      entityNew();
+      if (timeout.current) {
+        //console.log('clear timeout exists');
+        clearTimeout(timeout.current);
+      };
+    }, timer);
   },[setNewPlaceMarkers]);
 
   useEffect(() => {
-    //console.log(`to: ${sweepTime} ONLY ONCE`);
-    if (!sweepTime || sweepTime <= 0) {
-     // console.log('to= 0');
-      return;
-    } else {
-     // console.log(`sweepTime changed: ${sweepTime}`);
-      loadNewData(sweepTime);
+    //WHY is initial still needed??!!??
+    //console.log('useEffect - init "LOAD"');
+    if ( initial && places && places.length <=0) {
+      console.log('useEffect - init "LOAD" ||| FIRE!!!');
+      const entity = async () => {
+        const a = await handler;
+        setNewPlaceMarkers(a,true);
+      };
+      entity();
+      loadNewData(15000);
+    } 
+    //console.log(`useEffect - setSweepTime with organizeVehicles`);
+    if (!initial && prevPlaces && prevPlaces.length >=0 && !forceStop && places !== prevPlaces) {
+      console.log(`useEffect - setSweepTime with organizeVehicles ||| FIRE!!!`);
+      //console.log(`if not initial: ${initial}`);
+      loadNewData(organizeVehicles(places, prevPlaces));
     }
-    
-  }, [loadNewData, sweepTime]);
+  }, [forceStop, initial, loadNewData, places, prevPlaces, setNewPlaceMarkers]);
 
   const showPreview = (place: Entity) => {
     if (isVisible) {
@@ -236,7 +232,9 @@ const Map = ({
   };
 
   return (
+   
     <div className="map__container">
+       {console.log(`RETURN`)}
       {/**(places && places.length >0) && <button onClick={() => entityNew()}>New Entities</button> */}
       {/**(pastPlaces && pastPlaces.length >0) && <button onClick={() => organizeVehicles()}>Play music?</button> **/ }
       { <button onClick={() => setForceStop(true)}>Force Stop</button> }
@@ -249,6 +247,9 @@ const Map = ({
           <option value="0.3" label="100%" />
         </datalist>
       </div>
+      
+      {(prevPlaces && prevPlaces.length >0) && 
+      
       <MapContainer
         center={defaultPosition}
         zoom={11}
@@ -256,6 +257,7 @@ const Map = ({
         style={{ height: "100vh" }}
         zoomControl={false}
       >
+        {console.log(`RETURN CONDITIONAL!!!`)}
         <TileLayer
           attribution='&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -265,25 +267,32 @@ const Map = ({
             key={place.id}
             position={[place.vehicle.position.latitude, place.vehicle.position.longitude]}
             eventHandlers={{ click: () => showPreview(place) }}
+            icon={L.divIcon({
+              iconSize: [30, 30],
+              iconAnchor: [10, 10],
+              popupAnchor: [10, 0],
+              shadowSize: [0, 0],
+              className: `animated-icon my-icon-${place.id}`
+            })}
+            
           >
             <Tooltip>{place.vehicle.vehicle.label}</Tooltip>
           </Marker>
         ))}
         {/** <AddMarker /> */}
       </MapContainer>
+      }
     </div>
   );
 };
 
 const mapStateToProps = (state: IState) => {
-  const { places, search } = state;
+  const { places } = state;
   return {
     isVisible: places.placePreviewsIsVisible,
-    pastPlaces: places.pastPlaces,
     places: places.places,
     initial: places.initial,
     selectedPlace: places.selectedPlace,
-    sweepTime: search.sweepTime,
   };
 };
 
@@ -295,10 +304,6 @@ const mapDispatchToProps = (dispatch: any) => {
       dispatch(setSelectedPlace(payload)),
     setNewPlaceMarkers: (payload: Entity[], initial: boolean) =>
       dispatch(setAllPlaces(payload,initial)),
-    setPastPlaces: (payload: Entity[]) =>
-      dispatch(setPastPlaces(payload)),
-    setSweepTime: (payload: number) =>
-      dispatch(setSweepTime(payload)),
   };
 };
 
