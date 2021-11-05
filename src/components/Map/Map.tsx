@@ -1,4 +1,4 @@
-import { useEffect,useCallback,useRef, useState } from "react";
+import { useEffect,useCallback,useRef, useState, createRef } from "react";
 import L, { LatLngExpression } from "leaflet";
 import { MapContainer, TileLayer, Marker, Tooltip } from "react-leaflet";
 import { connect } from "react-redux";
@@ -13,24 +13,22 @@ const handler = fetch('/.netlify/functions/metro-updates').then((res) => res.jso
 let mphAvg = 16.385464299320347;
 let notesKey = [["D","F","G#","C"],["D","F","G#","B"],["C","D#","G","B"],["C","D#","G","B"]] as const;
 let newVehicles: Entity[] = []
-let retiredVehicles: Entity[] = []  
+let retiredVehicles: Entity[] = []
+let markerRefs: React.RefObject<L.Marker>[] = [];  
 let longAvg= -90.24467340251744
 let progress = 0;
 let multiple = 0;
 let chord = 0;
 let start = 0;
 let concertStart = 0;
-//let concertStart = true;
 
-
-  function usePrevious<T>(value: T): T {
-    const ref = useRef<T>();
-    useEffect(() => {
-      ref.current = value;
-    }, [value]);
-    return ref.current as T;
-  }
-  
+function usePrevious<T>(value: T): T {
+  const ref = useRef<T>();
+  useEffect(() => {
+    ref.current = value;
+  }, [value]);
+  return ref.current as T;
+}
 
 function pickFrequency(f: number) {
   if (f < 38.5272947947) return 1;
@@ -41,7 +39,6 @@ function pickFrequency(f: number) {
   if (f >= 38.7531426747) return 6;
   return 1;
 }
-
 
 function getAdsr(mph: number) {
   let adsr = 1 - mph / mphAvg;
@@ -86,8 +83,6 @@ const organizeVehicles = (places: Entity[], pastPlaces: Entity[]) => {
 
 
   if (updatedRoutes.length === 0 || !updatedRoutes) {
-    console.log('NO UPDATED ROUTES');
-    console.dir(updatedRoutes);
     return 2000;
   }
 /** 
@@ -105,15 +100,11 @@ const organizeVehicles = (places: Entity[], pastPlaces: Entity[]) => {
 
   if (concertStart === 0) concertStart = minTime;
 
-  console.log(`minTime: ${minTime} | count: ${count} | concertStart: ${concertStart}`);
-
   updatedRoutes.forEach((r:Entity,i:number) => {  
     progress = parseInt(r.vehicle.timestamp)-concertStart;
-    //progress += (updatedRoutes[i-1]) ?
     multiple = Math.floor(progress/8)
     chord = (progress >= 8) ? Math.floor((progress - 8*multiple)/2) : Math.floor(progress/2);
 
-    console.log(`progress: ${progress} | multiple: ${multiple} | chord: ${chord}`);
 
     type OctaveKey = keyof typeof noteFreq;
     let octave: OctaveKey = pickFrequency(r.vehicle.position.latitude);
@@ -121,7 +112,6 @@ const organizeVehicles = (places: Entity[], pastPlaces: Entity[]) => {
     type NoteKey = keyof typeof noteChar;
     let note: NoteKey = notesKey[chord][Math.round(rndmRng(3,0))];
 
-    //let prevStart = start;
     if (updatedRoutes[i-1] && r.vehicle.timestamp === updatedRoutes[i-1].vehicle.timestamp) { 
         start = parseInt(r.vehicle.timestamp)-minTime+(1/timestampDupes[r.vehicle.timestamp]*count) 
         count++;
@@ -130,15 +120,6 @@ const organizeVehicles = (places: Entity[], pastPlaces: Entity[]) => {
         count = 1;
     }
 
-    /**
-     * need to start at progress = 0
-     * multiple = Math.floor(start/8) +1
-     * if start >= 8 ? progress = start - 8*multiple
-     * 
-     * can minTime be used?
-     */
-
-
     let end: number = 0;
     let adsr: number = 0;
     if (r.movement && r.movement.distance) end = (r.movement.distance < .5) ? .5 : r.movement.distance;
@@ -146,7 +127,6 @@ const organizeVehicles = (places: Entity[], pastPlaces: Entity[]) => {
     if (r.movement && r.movement.mph) adsr = getAdsr(r.movement.mph);
 
     let sweep = {
-     // progress,
       i,
       start,
       end,
@@ -154,12 +134,21 @@ const organizeVehicles = (places: Entity[], pastPlaces: Entity[]) => {
       pan: (Math.abs(longAvg) - Math.abs(r.vehicle.position.longitude))*3,
       adsr: adsr * end,
     }
+    const found = markerRefs.find((m) => (m.current && m && m.current.options && m.current.options.icon && m.current.options.icon.options && m.current.options.icon.options.className &&
+        m.current.options.icon.options.className.includes(`map-icon_${r.id}`)));
+
+     setTimeout(function(){ if (found && found.current) found.current.setIcon(L.divIcon({
+      iconSize: [30, 30],
+      iconAnchor: [10, 10],
+      popupAnchor: [10, 0],
+      shadowSize: [0, 0],
+      className: `map-icon icon-animation map-icon_${r.id}`
+    }))},start*1000)
 
     playSweep(sweep);
   });
 
   let timeout: number = (parseInt(updatedRoutes[updatedRoutes.length-1].vehicle.timestamp)-minTime) * 1000;
-
   return timeout;
 }
 
@@ -176,6 +165,7 @@ const Map = ({
   const [forceStop, setForceStop] = useState<boolean>(false);
   const defaultPosition: LatLngExpression = [38.62727, -90.19789];
   const prevPlaces = usePrevious(places);
+  
 
   const loadNewData = useCallback((timer) => {
     //console.log(`useCallback - loadNewData`);
@@ -187,7 +177,6 @@ const Map = ({
       };
       entityNew();
       if (timeout.current) {
-        //console.log('clear timeout exists');
         clearTimeout(timeout.current);
       };
     }, timer);
@@ -197,7 +186,6 @@ const Map = ({
     //WHY is initial still needed??!!??
     //console.log('useEffect - init "LOAD"');
     if ( initial && places && places.length <=0) {
-      console.log('useEffect - init "LOAD" ||| FIRE!!!');
       const entity = async () => {
         const a = await handler;
         setNewPlaceMarkers(a,true);
@@ -205,10 +193,7 @@ const Map = ({
       entity();
       loadNewData(15000);
     } 
-    //console.log(`useEffect - setSweepTime with organizeVehicles`);
     if (!initial && prevPlaces && prevPlaces.length >=0 && !forceStop && places !== prevPlaces) {
-      console.log(`useEffect - setSweepTime with organizeVehicles ||| FIRE!!!`);
-      //console.log(`if not initial: ${initial}`);
       loadNewData(organizeVehicles(places, prevPlaces));
     }
   }, [forceStop, initial, loadNewData, places, prevPlaces, setNewPlaceMarkers]);
@@ -235,8 +220,8 @@ const Map = ({
    
     <div className="map__container">
        {console.log(`RETURN`)}
-      {/**(places && places.length >0) && <button onClick={() => entityNew()}>New Entities</button> */}
-      {/**(pastPlaces && pastPlaces.length >0) && <button onClick={() => organizeVehicles()}>Play music?</button> **/ }
+       {markerRefs.length = 0}
+
       { <button onClick={() => setForceStop(true)}>Force Stop</button> }
       <div className="left">
         <span>Volume: </span>
@@ -248,7 +233,7 @@ const Map = ({
         </datalist>
       </div>
       
-      {(prevPlaces && prevPlaces.length >0) && 
+      {(places && places.length >0) && 
       
       <MapContainer
         center={defaultPosition}
@@ -262,7 +247,11 @@ const Map = ({
           attribution='&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
-        {places.map((place: Entity) => (
+
+        {places.map((place: Entity) =>  {
+          const newRef = createRef<L.Marker>();
+          markerRefs.push(newRef);
+          return (
           <Marker
             key={place.id}
             position={[place.vehicle.position.latitude, place.vehicle.position.longitude]}
@@ -272,13 +261,13 @@ const Map = ({
               iconAnchor: [10, 10],
               popupAnchor: [10, 0],
               shadowSize: [0, 0],
-              className: `animated-icon my-icon-${place.id}`
+              className: `map-icon map-icon_${place.id}`
             })}
-            
+            ref= {newRef as React.RefObject<L.Marker>} 
           >
-            <Tooltip>{place.vehicle.vehicle.label}</Tooltip>
+            <Tooltip key={place.id}>{place.vehicle.vehicle.label}</Tooltip>
           </Marker>
-        ))}
+        )})}
         {/** <AddMarker /> */}
       </MapContainer>
       }
