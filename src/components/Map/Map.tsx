@@ -22,12 +22,12 @@ let chord = 0;
 let start = 0;
 let concertStart = 0;
 
-function usePrevious<T>(value: T): T {
+function usePrevious<T>(value: T): T | undefined {
   const ref = useRef<T>();
   useEffect(() => {
     ref.current = value;
   }, [value]);
-  return ref.current as T;
+  return ref.current;
 }
 
 function pickFrequency(f: number) {
