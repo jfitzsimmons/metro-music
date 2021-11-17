@@ -16,5 +16,11 @@ export const handler: Handler = function(event, context, callback) {
         statusCode: 200,
         body: JSON.stringify(feed.entity),
       });
-    });
+    })
+    .catch(function (err) {
+      callback(null, {
+        statusCode: err.number,
+        body: JSON.stringify({}),
+      });
+  });;
 };

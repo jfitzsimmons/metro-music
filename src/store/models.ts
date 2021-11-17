@@ -3,8 +3,12 @@ import { LatLngExpression } from "leaflet";
 export interface SearchState {
   searchIsVisible: boolean;
   sweepTime: number;
+  textCues: TextCue[];
 }
-
+export interface TextCue {
+  id: string;
+  text: string;
+}
 export interface PlaceState {
   places: Entity[];
   pastPlaces: Entity[];

@@ -2,15 +2,16 @@ import { useEffect,useCallback,useRef, useState, createRef } from "react";
 import L, { LatLngExpression } from "leaflet";
 import { MapContainer, TileLayer, Marker, Tooltip } from "react-leaflet";
 import { connect } from "react-redux";
-import { setPlacePreviewVisibility, setSelectedPlace, setAllPlaces } from "../../store/actions";
-import { IState, Entity } from "../../store/models";
-//import AddMarker from "./AddMarker";
+import store from "../../store";
+import { setPlacePreviewVisibility, setSelectedPlace, setAllPlaces, setNewText } from "../../store/actions";
+import { IState, Entity, TextCue } from "../../store/models";
 import { playSweep, noteFreq, changeVolume } from "../../utils/webAudio"
 import "./Map.css";
 import { countBy, distance, rndmRng } from "../../utils/calculations";
+import { getAdsr, pickFrequency } from "../../utils/waveShaping";
+
 
 const handler = fetch('/.netlify/functions/metro-updates').then((res) => res.json())
-let mphAvg = 16.385464299320347;
 let notesKey = [["D","F","G#","C"],["D","F","G#","B"],["C","D#","G","B"],["C","D#","G","B"]] as const;
 let newVehicles: Entity[] = []
 let retiredVehicles: Entity[] = []
@@ -30,69 +31,67 @@ function usePrevious<T>(value: T): T | undefined {
   return ref.current;
 }
 
-function pickFrequency(f: number) {
-  if (f < 38.5272947947) return 1;
-  if (f >= 38.5272947947 && f < 38.5837567647) return 2;
-  if (f >= 38.5837567647 && f < 38.6402187347) return 3;
-  if (f >= 38.6402187347 && f < 38.6966807047) return 4;
-  if (f >= 38.6966807047 && f < 38.7531426747) return 5;
-  if (f >= 38.7531426747) return 6;
-  return 1;
-}
-
-function getAdsr(mph: number) {
-  let adsr = 1 - mph / mphAvg;
-  if (adsr > 1) adsr = .99;
-  if (adsr < -1) adsr = -.99;
-  if (adsr < 0) adsr++;
-  return adsr;
-}
-
 const organizeVehicles = (places: Entity[], pastPlaces: Entity[]) => {
   let i2 = 0;
 
+  
+
   for (let i=0; i<pastPlaces.length; i++) {
-      if (pastPlaces[i].vehicle.vehicle.id !== places[i2].vehicle.vehicle.id) {
-          if (places.some(( vehicle: Entity ) => vehicle.vehicle.vehicle.id === pastPlaces[i].vehicle.vehicle.id)) {
-              newVehicles.push(places[i2]);
-              i--;
-          } else {
-              retiredVehicles.push(pastPlaces[i]);
-              i2--
-          }
-      } else {
-        places[i2].movement = {
-          distance: distance(pastPlaces[i].vehicle.position.latitude , pastPlaces[i].vehicle.position.longitude, places[i2].vehicle.position.latitude, places[i2].vehicle.position.longitude),
-          timing: parseInt(places[i2].vehicle.timestamp) - parseInt(pastPlaces[i].vehicle.timestamp),
-          mph: (distance(pastPlaces[i].vehicle.position.latitude , pastPlaces[i].vehicle.position.longitude, places[i2].vehicle.position.latitude, places[i2].vehicle.position.longitude) / (parseInt(places[i2].vehicle.timestamp)- parseInt(pastPlaces[i].vehicle.timestamp))) *3600,
-        };
-      }
+    if (!places[i2]) {
+      return [];
+    }
+    if (pastPlaces[i].vehicle.vehicle.id !== places[i2].vehicle.vehicle.id) {
+        if (places.some(( vehicle: Entity ) => vehicle.vehicle.vehicle.id === pastPlaces[i].vehicle.vehicle.id)) {
+            newVehicles.push(places[i2]);
+            i--;
+        } else {
+            retiredVehicles.push(pastPlaces[i]);
+            i2--
+        }
+    } else {
+      places[i2].movement = {
+        distance: distance(pastPlaces[i].vehicle.position.latitude , pastPlaces[i].vehicle.position.longitude, places[i2].vehicle.position.latitude, places[i2].vehicle.position.longitude),
+        timing: parseInt(places[i2].vehicle.timestamp) - parseInt(pastPlaces[i].vehicle.timestamp),
+        mph: (distance(pastPlaces[i].vehicle.position.latitude , pastPlaces[i].vehicle.position.longitude, places[i2].vehicle.position.latitude, places[i2].vehicle.position.longitude) / (parseInt(places[i2].vehicle.timestamp)- parseInt(pastPlaces[i].vehicle.timestamp))) *3600,
+      };
+    }
 
-      i2++
+    i2++
   }
-/** 
-  console.log(`retiredVehicles`);
-  console.log(retiredVehicles);
 
-  console.log(`newVehicles`);
-  console.log(newVehicles);
-*/
+  //console.log(`retiredVehicles: ${retiredVehicles.length}`);
+  //console.log(retiredVehicles);
+
+  //console.log(`newVehicles: ${newVehicles.length}`);
+  //console.log(newVehicles);
+
   let updatedRoutes = places.filter((vehicle: Entity) => (vehicle.movement && vehicle.movement.distance !== 0)).sort(function(x: Entity, y: Entity){
     return parseInt(x.vehicle.timestamp) - parseInt(y.vehicle.timestamp);
   });
 
+  return updatedRoutes;
+}
 
-  if (updatedRoutes.length === 0 || !updatedRoutes) {
+const shapeWaves = (routes: Entity[]) => {
+
+  if (routes.length === 0 || !routes) {
     return 2000;
   }
+
+  store.dispatch(setNewText({
+    id: `newdata${Date.now()}`,
+    text: `There are currently ${routes.length} busses making moves`,
+  }));
+
+
 /** 
-  console.log(`updatedRoutes`);
-  console.log(updatedRoutes);
+  console.log(`routes`);
+  console.log(routes);
 */
   let timestampDupes: any = {}
-  timestampDupes = countBy(updatedRoutes, (r: { vehicle: { timestamp: number; }; }) => r.vehicle.timestamp);
+  timestampDupes = countBy(routes, (r: { vehicle: { timestamp: number; }; }) => r.vehicle.timestamp);
 
-  let minTime = parseInt(updatedRoutes.sort(function(x: Entity, y: Entity){
+  let minTime = parseInt(routes.sort(function(x: Entity, y: Entity){
       return parseInt(x.vehicle.timestamp) - parseInt(y.vehicle.timestamp);
   })[0].vehicle.timestamp);
 
@@ -100,7 +99,7 @@ const organizeVehicles = (places: Entity[], pastPlaces: Entity[]) => {
 
   if (concertStart === 0) concertStart = minTime;
 
-  updatedRoutes.forEach((r:Entity,i:number) => {  
+  routes.forEach((r:Entity,i:number) => {  
     progress = parseInt(r.vehicle.timestamp)-concertStart;
     multiple = Math.floor(progress/8)
     chord = (progress >= 8) ? Math.floor((progress - 8*multiple)/2) : Math.floor(progress/2);
@@ -112,7 +111,7 @@ const organizeVehicles = (places: Entity[], pastPlaces: Entity[]) => {
     type NoteKey = keyof typeof noteChar;
     let note: NoteKey = notesKey[chord][Math.round(rndmRng(3,0))];
 
-    if (updatedRoutes[i-1] && r.vehicle.timestamp === updatedRoutes[i-1].vehicle.timestamp) { 
+    if (routes[i-1] && r.vehicle.timestamp === routes[i-1].vehicle.timestamp) { 
         start = parseInt(r.vehicle.timestamp)-minTime+(1/timestampDupes[r.vehicle.timestamp]*count) 
         count++;
     } else {
@@ -122,8 +121,8 @@ const organizeVehicles = (places: Entity[], pastPlaces: Entity[]) => {
 
     let end: number = 0;
     let adsr: number = 0;
-    if (r.movement && r.movement.distance) end = (r.movement.distance < .5) ? .5 : r.movement.distance;
-    end *=3;
+    if (r.movement && r.movement.distance) end = (r.movement.distance < .05) ? .05 : r.movement.distance;
+    end *=15;
     if (r.movement && r.movement.mph) adsr = getAdsr(r.movement.mph);
 
     let sweep = {
@@ -137,18 +136,28 @@ const organizeVehicles = (places: Entity[], pastPlaces: Entity[]) => {
     const found = markerRefs.find((m) => (m.current && m && m.current.options && m.current.options.icon && m.current.options.icon.options && m.current.options.icon.options.className &&
         m.current.options.icon.options.className.includes(`map-icon_${r.id}`)));
 
-     setTimeout(function(){ if (found && found.current) found.current.setIcon(L.divIcon({
-      iconSize: [30, 30],
-      iconAnchor: [10, 10],
-      popupAnchor: [10, 0],
-      shadowSize: [0, 0],
-      className: `map-icon icon-animation map-icon_${r.id}`
-    }))},start*1000)
+    setTimeout(function(){ 
+      if (found && found.current) {
+        found.current.setIcon(
+          L.divIcon({
+            iconSize: [30, 30],
+            iconAnchor: [10, 10],
+            popupAnchor: [10, 0],
+            shadowSize: [0, 0],
+            className: `map-icon icon-animation map-icon_${r.id}`
+          })
+        );
+        store.dispatch(setNewText({
+          id: `${r.id}${i}${start}${end}`,
+          text: `${r.vehicle.vehicle.label} is playing a ${note}${octave} for ${end.toFixed(3)} seconds`,
+        }));
+      }
+    },start*1000)
 
     playSweep(sweep);
   });
 
-  let timeout: number = (parseInt(updatedRoutes[updatedRoutes.length-1].vehicle.timestamp)-minTime) * 1000;
+  let timeout: number = (parseInt(routes[routes.length-1].vehicle.timestamp)-minTime) * 1000;
   return timeout;
 }
 
@@ -160,6 +169,7 @@ const Map = ({
   togglePreview,
   setPlaceForPreview,
   setNewPlaceMarkers,
+  addToText
 }: any) => {
   const timeout:  { current: NodeJS.Timeout | null } = useRef(null);
   const [forceStop, setForceStop] = useState<boolean>(false);
@@ -168,14 +178,19 @@ const Map = ({
   
 
   const loadNewData = useCallback((timer) => {
-    //console.log(`useCallback - loadNewData`);
     timeout.current =  setTimeout(function(){
       const entityNew = async () => {
         const handler2 = fetch('/.netlify/functions/metro-updates').then((res) => res.json())
-        const b = await handler2;
-        setNewPlaceMarkers(b, false);
+        try {
+          const b = await handler2;
+          setNewPlaceMarkers(b,false);
+        } catch(err) {
+          console.error(err);
+          loadNewData(2000);
+        }
       };
       entityNew();
+      
       if (timeout.current) {
         clearTimeout(timeout.current);
       };
@@ -183,20 +198,27 @@ const Map = ({
   },[setNewPlaceMarkers]);
 
   useEffect(() => {
-    //WHY is initial still needed??!!??
-    //console.log('useEffect - init "LOAD"');
     if ( initial && places && places.length <=0) {
       const entity = async () => {
-        const a = await handler;
-        setNewPlaceMarkers(a,true);
+        try {
+          const a = await handler;
+          setNewPlaceMarkers(a,true);
+        } catch(err) {
+          console.error(err);
+        }
       };
       entity();
-      loadNewData(15000);
+      loadNewData(10000);
+      addToText({
+        id: `beginshortly`,
+        text: `The piece will begin shortly`,
+      })
     } 
     if (!initial && prevPlaces && prevPlaces.length >=0 && !forceStop && places !== prevPlaces) {
-      loadNewData(organizeVehicles(places, prevPlaces));
+      let routes = organizeVehicles(places, prevPlaces);
+      loadNewData(shapeWaves(routes));
     }
-  }, [forceStop, initial, loadNewData, places, prevPlaces, setNewPlaceMarkers]);
+  }, [addToText, forceStop, initial, loadNewData, places, prevPlaces, setNewPlaceMarkers]);
 
   const showPreview = (place: Entity) => {
     if (isVisible) {
@@ -219,7 +241,6 @@ const Map = ({
   return (
    
     <div className="map__container">
-       {console.log(`RETURN`)}
        {markerRefs.length = 0}
 
       { <button onClick={() => setForceStop(true)}>Force Stop</button> }
@@ -242,7 +263,6 @@ const Map = ({
         style={{ height: "100vh" }}
         zoomControl={false}
       >
-        {console.log(`RETURN CONDITIONAL!!!`)}
         <TileLayer
           attribution="Map data &copy; <a href=&quot;https://www.openstreetmap.org/&quot;>OpenStreetMap</a> contributors, <a href=&quot;https://creativecommons.org/licenses/by-sa/2.0/&quot;>CC-BY-SA</a>, Imagery &copy; <a href=&quot;https://www.mapbox.com/&quot;>Mapbox</a>"
           url="https://api.mapbox.com/styles/v1/jfitzsimmons/ckvntg80w0gn014qc1s75efwr/tiles/256/{z}/{x}/{y}@2x?access_token=pk.eyJ1IjoiamZpdHpzaW1tb25zIiwiYSI6ImNrdm50am1vcDNnMGEybnFmZHpzYzJodWEifQ.Y-mgO21RLeOtil5V_Fu7dA"
@@ -282,6 +302,7 @@ const mapStateToProps = (state: IState) => {
     places: places.places,
     initial: places.initial,
     selectedPlace: places.selectedPlace,
+    //newText: search.newText,
   };
 };
 
@@ -293,6 +314,8 @@ const mapDispatchToProps = (dispatch: any) => {
       dispatch(setSelectedPlace(payload)),
     setNewPlaceMarkers: (payload: Entity[], initial: boolean) =>
       dispatch(setAllPlaces(payload,initial)),
+    addToText: (payload: TextCue) =>
+      dispatch(setNewText(payload)),
   };
 };
 

@@ -120,8 +120,6 @@ export const noteFreq:Octaves = {
 //const wave = audioContext.createPeriodicWave(wavetable.real, wavetable.imag);
 
 export function playSweep(sweep: { freq: number; start: number; adsr: number; end: any; pan: number; }) {
-  //(volumeControl !== null) ? console.log(`volumeControl.value: ${volumeControl.value}`) : console.log('volume NULL');
-  //console.log(sweep);
   let osc: OscillatorNode = audioContext.createOscillator();
   let gainNode: GainNode = audioContext.createGain();
   let stereo: StereoPannerNode = audioContext.createStereoPanner();
