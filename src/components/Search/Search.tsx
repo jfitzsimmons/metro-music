@@ -13,13 +13,13 @@ const Search = ({ searchIsVisible, closeSearch, textCues }: any) => {
       return (
           rect.top >= 0 &&
           rect.left >= 0 &&
-          rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) &&
+          rect.bottom <= (window.innerHeight+100 || document.documentElement.clientHeight+100) &&
           rect.right <= (window.innerWidth || document.documentElement.clientWidth)
       );
     }
 
   function renderItems() {
-    return (textCues) && textCues.map((tc: TextCue) => <Post key={tc.id} text={tc.text} />)
+    return (textCues) && textCues.map((tc: TextCue) => <Post key={tc.id} text={tc.text} className={(tc.class)&&tc.class} />)
   }
 
   useEffect(() => {
@@ -45,8 +45,18 @@ const Search = ({ searchIsVisible, closeSearch, textCues }: any) => {
   );
 };
 
-const Post = memo(({text}: any) => {
-  return(<div>{text}</div>);  
+var truncateBefore = function (str:string, pattern:string) {
+  return str.slice(str.indexOf(pattern) + pattern.length);
+};
+var truncateAfter = function (str:string, pattern:string) {
+  return str.slice(0, str.indexOf(pattern));
+} 
+const Post = memo(({text, className}: any) => {
+  return(
+    <div className={className}>
+      {(className === "vehicle") ? <><span className="bus">{truncateAfter(text, "~")}</span><span className="triangle"></span><span className="note">{truncateBefore(text, "~")}</span></> : text}
+    </div>
+  );  
 });
 
 const mapStateToProps = (state: IState) => {

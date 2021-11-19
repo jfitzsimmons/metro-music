@@ -12,7 +12,11 @@ import { getAdsr, pickFrequency } from "../../utils/waveShaping";
 
 
 const handler = fetch('/.netlify/functions/metro-updates').then((res) => res.json())
-let notesKey = [["D","F","G#","C"],["D","F","G#","B"],["C","D#","G","B"],["C","D#","G","B"]] as const;
+let notesKey = [
+  [["C","G","E","A"],["C","G","E","A"],["F","A","C","E"],["G","B","D","F"]], // 1 4 5 CMajor
+  [["F#","E","A","D"],["A","E","B","C#"],["E","B","F#","G#"],["F#","C#","E","A"]],//IV I V vim in A Major
+  [["D","F","G#","C"],["D","F","G#","B"],["C","D#","G","B"],["C","D#","G","B"]] // 2 5 1 C Minor???
+] as const;
 let newVehicles: Entity[] = []
 let retiredVehicles: Entity[] = []
 let markerRefs: React.RefObject<L.Marker>[] = [];  
@@ -22,6 +26,7 @@ let multiple = 0;
 let chord = 0;
 let start = 0;
 let concertStart = 0;
+let progression = Math.round(rndmRng(2,0));
 
 function usePrevious<T>(value: T): T | undefined {
   const ref = useRef<T>();
@@ -81,6 +86,7 @@ const shapeWaves = (routes: Entity[]) => {
   store.dispatch(setNewText({
     id: `newdata${Date.now()}`,
     text: `There are currently ${routes.length} busses making moves`,
+    class: `newdata`
   }));
 
 
@@ -109,7 +115,7 @@ const shapeWaves = (routes: Entity[]) => {
     let octave: OctaveKey = pickFrequency(r.vehicle.position.latitude);
     let noteChar = noteFreq[octave];
     type NoteKey = keyof typeof noteChar;
-    let note: NoteKey = notesKey[chord][Math.round(rndmRng(3,0))];
+    let note: NoteKey = notesKey[progression][chord][Math.round(rndmRng(3,0))];
 
     if (routes[i-1] && r.vehicle.timestamp === routes[i-1].vehicle.timestamp) { 
         start = parseInt(r.vehicle.timestamp)-minTime+(1/timestampDupes[r.vehicle.timestamp]*count) 
@@ -122,7 +128,8 @@ const shapeWaves = (routes: Entity[]) => {
     let end: number = 0;
     let adsr: number = 0;
     if (r.movement && r.movement.distance) end = (r.movement.distance < .05) ? .05 : r.movement.distance;
-    end *=15;
+    end *=10;
+    if (end > 4) end = 4;
     if (r.movement && r.movement.mph) adsr = getAdsr(r.movement.mph);
 
     let sweep = {
@@ -134,7 +141,7 @@ const shapeWaves = (routes: Entity[]) => {
       adsr: adsr * end,
     }
     const found = markerRefs.find((m) => (m.current && m && m.current.options && m.current.options.icon && m.current.options.icon.options && m.current.options.icon.options.className &&
-        m.current.options.icon.options.className.includes(`map-icon_${r.id}`)));
+        m.current.options.icon.options.className.includes(`map-icon_${r.vehicle.vehicle.id}`)));
 
     setTimeout(function(){ 
       if (found && found.current) {
@@ -144,12 +151,13 @@ const shapeWaves = (routes: Entity[]) => {
             iconAnchor: [10, 10],
             popupAnchor: [10, 0],
             shadowSize: [0, 0],
-            className: `map-icon icon-animation map-icon_${r.id}`
+            className: `map-icon icon-animation map-icon_${r.vehicle.vehicle.id}`
           })
         );
         store.dispatch(setNewText({
-          id: `${r.id}${i}${start}${end}`,
-          text: `${r.vehicle.vehicle.label} is playing a ${note}${octave} for ${end.toFixed(3)} seconds`,
+          id: `${r.vehicle.vehicle.id}${i}${start}${end}`,
+          text: `${r.vehicle.vehicle.label} ~ is playing a ${note}${octave} for ${end.toFixed(3)} seconds`,
+          class: `vehicle`,
         }));
       }
     },start*1000)
@@ -183,6 +191,7 @@ const Map = ({
         const handler2 = fetch('/.netlify/functions/metro-updates').then((res) => res.json())
         try {
           const b = await handler2;
+          markerRefs.length = 0;
           setNewPlaceMarkers(b,false);
         } catch(err) {
           console.error(err);
@@ -212,6 +221,7 @@ const Map = ({
       addToText({
         id: `beginshortly`,
         text: `The piece will begin shortly`,
+        class: `begin`,
       })
     } 
     if (!initial && prevPlaces && prevPlaces.length >=0 && !forceStop && places !== prevPlaces) {
@@ -226,7 +236,7 @@ const Map = ({
       setPlaceForPreview(null);
     }
 
-    if (selectedPlace?.id !== place.id) {
+    if (selectedPlace?.vehicle.vehicle.id !== place.vehicle.vehicle.id) {
       setTimeout(() => {
         showPlace(place);
       }, 400);
@@ -238,11 +248,37 @@ const Map = ({
     togglePreview(true);
   };
 
+  function renderItems() {
+    return (places) && places.map((place: Entity) => {
+      const newRef = createRef<L.Marker>();
+      markerRefs.push(newRef);
+      return (
+        <Marker
+          key={place.vehicle.vehicle.id}
+          position={[place.vehicle.position.latitude, place.vehicle.position.longitude]}
+          eventHandlers={{ click: () => showPreview(place) }}
+          icon={L.divIcon({
+            iconSize: [30, 30],
+            iconAnchor: [10, 10],
+            popupAnchor: [10, 0],
+            shadowSize: [0, 0],
+            className: `map-icon map-icon_${place.vehicle.vehicle.id} ${(selectedPlace && selectedPlace.vehicle.vehicle.id === place.vehicle.vehicle.id) && 'icon-selected'}`
+          })}
+          ref= {newRef as React.RefObject<L.Marker>} 
+        >
+          {console.log(`in marker list`)}
+          <Tooltip>{place.vehicle.vehicle.label}</Tooltip>
+        </Marker>
+      )
+  
+    })
+  }
+
   return (
    
     <div className="map__container">
-       {markerRefs.length = 0}
-
+       
+       {console.log(`in MAP return`)}
       { <button onClick={() => setForceStop(true)}>Force Stop</button> }
       <div className="left">
         <span>Volume: </span>
@@ -268,27 +304,8 @@ const Map = ({
           url="https://api.mapbox.com/styles/v1/jfitzsimmons/ckvntg80w0gn014qc1s75efwr/tiles/256/{z}/{x}/{y}@2x?access_token=pk.eyJ1IjoiamZpdHpzaW1tb25zIiwiYSI6ImNrdm50am1vcDNnMGEybnFmZHpzYzJodWEifQ.Y-mgO21RLeOtil5V_Fu7dA"
         />
 
-        {places.map((place: Entity) =>  {
-          const newRef = createRef<L.Marker>();
-          markerRefs.push(newRef);
-          return (
-          <Marker
-            key={place.id}
-            position={[place.vehicle.position.latitude, place.vehicle.position.longitude]}
-            eventHandlers={{ click: () => showPreview(place) }}
-            icon={L.divIcon({
-              iconSize: [30, 30],
-              iconAnchor: [10, 10],
-              popupAnchor: [10, 0],
-              shadowSize: [0, 0],
-              className: `map-icon map-icon_${place.id}`
-            })}
-            ref= {newRef as React.RefObject<L.Marker>} 
-          >
-            <Tooltip key={place.id}>{place.vehicle.vehicle.label}</Tooltip>
-          </Marker>
-        )})}
-        {/** <AddMarker /> */}
+        {renderItems()}
+
       </MapContainer>
       }
     </div>

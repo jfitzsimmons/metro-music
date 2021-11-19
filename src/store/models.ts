@@ -8,6 +8,7 @@ export interface SearchState {
 export interface TextCue {
   id: string;
   text: string;
+  class?: string
 }
 export interface PlaceState {
   places: Entity[];

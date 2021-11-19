@@ -4,8 +4,6 @@ import { rndmRng } from './calculations';
 let audioContext = new (window.AudioContext)();
 //let volumeControl: HTMLInputElement | null
 //volumeControl = document.querySelector<HTMLInputElement>("input[name='volume']");
-
-
 export interface Octaves {
   1: Scale;
   2: Scale;
@@ -123,6 +121,9 @@ export function playSweep(sweep: { freq: number; start: number; adsr: number; en
   let osc: OscillatorNode = audioContext.createOscillator();
   let gainNode: GainNode = audioContext.createGain();
   let stereo: StereoPannerNode = audioContext.createStereoPanner();
+  let biquadFilter: BiquadFilterNode = audioContext.createBiquadFilter();
+  biquadFilter.type = "lowpass";
+  biquadFilter.frequency.setValueAtTime(600, audioContext.currentTime);
   osc.frequency.value = sweep.freq;
   osc.detune.value = rndmRng(14,-14);
   gainNode.gain.cancelScheduledValues(audioContext.currentTime + sweep.start);
@@ -133,7 +134,7 @@ export function playSweep(sweep: { freq: number; start: number; adsr: number; en
   gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + sweep.start + sweep.end - (sweep.end - sweep.adsr)*.7);
   stereo.pan.value = sweep.pan;
 
-  osc.connect(gainNode).connect(stereo).connect(audioContext.destination);
+  osc.connect(gainNode).connect(biquadFilter).connect(stereo).connect(audioContext.destination);
 
   osc.start(audioContext.currentTime + sweep.start);
   osc.stop(audioContext.currentTime + sweep.start + sweep.end);

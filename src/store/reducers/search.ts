@@ -7,7 +7,8 @@ const initialState: SearchState = {
   textCues: [
     {
       id:"welcome",
-      text: "Welcome to the performance of the St. Louis Metro."
+      text: "Welcome to the performance of the St. Louis Metro.",
+      class: "welcome"
     }
   ],
 };

@@ -14,12 +14,8 @@ const Preview = ({ isVisible, place, closePreview }: any) => {
       <div className="preview__close" onClick={() => closePreview()}>
         <AiFillCloseCircle></AiFillCloseCircle>
       </div>
-      <div
-        className="preview__picture"
-        style={{ backgroundImage: `url(${place?.picture})` }}
-      ></div>
       <div className="preview__description__container">
-        <div className="preview__title">{place?.id}</div>
+        <div className="preview__title">{place?.vehicle.vehicle.id}</div>
         <div className="preview__description">
           <ul>
             <li>latitude: {place?.vehicle.position.latitude}</li>
