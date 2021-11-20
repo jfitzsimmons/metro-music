@@ -53,7 +53,7 @@ var truncateAfter = function (str:string, pattern:string) {
 } 
 const Post = memo(({text, className}: any) => {
   return(
-    <div className={className}>
+    <div className={`${className} search__list__item`}>
       {(className === "vehicle") ? <><span className="bus">{truncateAfter(text, "~")}</span><span className="triangle"></span><span className="note">{truncateBefore(text, "~")}</span></> : text}
     </div>
   );  

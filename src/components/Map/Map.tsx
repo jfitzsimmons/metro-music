@@ -5,7 +5,7 @@ import { connect } from "react-redux";
 import store from "../../store";
 import { setPlacePreviewVisibility, setSelectedPlace, setAllPlaces, setNewText } from "../../store/actions";
 import { IState, Entity, TextCue } from "../../store/models";
-import { playSweep, noteFreq, changeVolume } from "../../utils/webAudio"
+import { playSweep, noteFreq } from "../../utils/webAudio"
 import "./Map.css";
 import { countBy, distance, rndmRng } from "../../utils/calculations";
 import { getAdsr, pickFrequency } from "../../utils/waveShaping";
@@ -38,8 +38,6 @@ function usePrevious<T>(value: T): T | undefined {
 
 const organizeVehicles = (places: Entity[], pastPlaces: Entity[]) => {
   let i2 = 0;
-
-  
 
   for (let i=0; i<pastPlaces.length; i++) {
     if (!places[i2]) {
@@ -77,8 +75,28 @@ const organizeVehicles = (places: Entity[], pastPlaces: Entity[]) => {
   return updatedRoutes;
 }
 
-const shapeWaves = (routes: Entity[]) => {
 
+
+const Map = ({
+  isVisible,
+  places,
+  initial,
+  selectedPlace,
+  togglePreview,
+  setPlaceForPreview,
+  setNewPlaceMarkers,
+  addToText,
+  volume
+}: any) => {
+  const timeout:  { current: NodeJS.Timeout | null } = useRef(null);
+  const [forceStop, setForceStop] = useState<boolean>(false);
+  const defaultPosition: LatLngExpression = [38.62727, -90.19789];
+  const prevPlaces = usePrevious(places);
+
+ 
+
+const shapeWaves = useCallback((routes: Entity[]) => {
+  console.log(`SHAPE WAVES volume: ${volume}`)
   if (routes.length === 0 || !routes) {
     return 2000;
   }
@@ -133,6 +151,7 @@ const shapeWaves = (routes: Entity[]) => {
     if (r.movement && r.movement.mph) adsr = getAdsr(r.movement.mph);
 
     let sweep = {
+      volume,
       i,
       start,
       end,
@@ -147,7 +166,7 @@ const shapeWaves = (routes: Entity[]) => {
       if (found && found.current) {
         found.current.setIcon(
           L.divIcon({
-            iconSize: [30, 30],
+            iconSize: [40,40],
             iconAnchor: [10, 10],
             popupAnchor: [10, 0],
             shadowSize: [0, 0],
@@ -156,7 +175,7 @@ const shapeWaves = (routes: Entity[]) => {
         );
         store.dispatch(setNewText({
           id: `${r.vehicle.vehicle.id}${i}${start}${end}`,
-          text: `${r.vehicle.vehicle.label} ~ is playing a ${note}${octave} for ${end.toFixed(3)} seconds`,
+          text: `${r.vehicle.vehicle.label} ~ is playing ${note}${octave} for ${end.toFixed(3)} seconds`,
           class: `vehicle`,
         }));
       }
@@ -167,22 +186,7 @@ const shapeWaves = (routes: Entity[]) => {
 
   let timeout: number = (parseInt(routes[routes.length-1].vehicle.timestamp)-minTime) * 1000;
   return timeout;
-}
-
-const Map = ({
-  isVisible,
-  places,
-  initial,
-  selectedPlace,
-  togglePreview,
-  setPlaceForPreview,
-  setNewPlaceMarkers,
-  addToText
-}: any) => {
-  const timeout:  { current: NodeJS.Timeout | null } = useRef(null);
-  const [forceStop, setForceStop] = useState<boolean>(false);
-  const defaultPosition: LatLngExpression = [38.62727, -90.19789];
-  const prevPlaces = usePrevious(places);
+},[volume]);
   
 
   const loadNewData = useCallback((timer) => {
@@ -228,7 +232,7 @@ const Map = ({
       let routes = organizeVehicles(places, prevPlaces);
       loadNewData(shapeWaves(routes));
     }
-  }, [addToText, forceStop, initial, loadNewData, places, prevPlaces, setNewPlaceMarkers]);
+  }, [addToText, forceStop, initial, loadNewData, places, prevPlaces, setNewPlaceMarkers, shapeWaves]);
 
   const showPreview = (place: Entity) => {
     if (isVisible) {
@@ -258,7 +262,7 @@ const Map = ({
           position={[place.vehicle.position.latitude, place.vehicle.position.longitude]}
           eventHandlers={{ click: () => showPreview(place) }}
           icon={L.divIcon({
-            iconSize: [30, 30],
+            iconSize: [40,40],
             iconAnchor: [10, 10],
             popupAnchor: [10, 0],
             shadowSize: [0, 0],
@@ -277,19 +281,10 @@ const Map = ({
   return (
    
     <div className="map__container">
-       
+
        {console.log(`in MAP return`)}
       { <button onClick={() => setForceStop(true)}>Force Stop</button> }
-      <div className="left">
-        <span>Volume: </span>
-        <input type="range" min="0.0" max="0.3" step="0.02"
-            defaultValue="0.15" list="volumes" name="volume" onChange={() => changeVolume()}/>
-        <datalist id="volumes">
-          <option value="0.0" label="Mute" />
-          <option value="0.3" label="100%" />
-        </datalist>
-      </div>
-      
+
       {(places && places.length >0) && 
       
       <MapContainer
@@ -313,13 +308,13 @@ const Map = ({
 };
 
 const mapStateToProps = (state: IState) => {
-  const { places } = state;
+  const { places, controls } = state;
   return {
     isVisible: places.placePreviewsIsVisible,
     places: places.places,
     initial: places.initial,
     selectedPlace: places.selectedPlace,
-    //newText: search.newText,
+    volume: controls.volume,
   };
 };
 

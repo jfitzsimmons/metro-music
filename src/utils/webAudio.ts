@@ -117,11 +117,13 @@ export const noteFreq:Octaves = {
 
 //const wave = audioContext.createPeriodicWave(wavetable.real, wavetable.imag);
 
-export function playSweep(sweep: { freq: number; start: number; adsr: number; end: any; pan: number; }) {
+export function playSweep(sweep: {volume: string; freq: number; start: number; adsr: number; end: any; pan: number; }) {
   let osc: OscillatorNode = audioContext.createOscillator();
   let gainNode: GainNode = audioContext.createGain();
   let stereo: StereoPannerNode = audioContext.createStereoPanner();
   let biquadFilter: BiquadFilterNode = audioContext.createBiquadFilter();
+  //console.log(`sweep.volume: ${parseFloat(sweep.volume)}`)
+  gainNode.gain.value = parseFloat(sweep.volume)
   biquadFilter.type = "lowpass";
   biquadFilter.frequency.setValueAtTime(600, audioContext.currentTime);
   osc.frequency.value = sweep.freq;
@@ -129,7 +131,7 @@ export function playSweep(sweep: { freq: number; start: number; adsr: number; en
   gainNode.gain.cancelScheduledValues(audioContext.currentTime + sweep.start);
   gainNode.gain.setValueAtTime(0, audioContext.currentTime + sweep.start);
   //if (volumeControl !== null) gainNode.gain.linearRampToValueAtTime(parseInt(volumeControl.value), audioContext.currentTime + sweep.start + sweep.adsr);
-  gainNode.gain.linearRampToValueAtTime(.2, audioContext.currentTime + sweep.start + sweep.adsr);
+  gainNode.gain.linearRampToValueAtTime(parseFloat(sweep.volume), audioContext.currentTime + sweep.start + sweep.adsr);
 
   gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + sweep.start + sweep.end - (sweep.end - sweep.adsr)*.7);
   stereo.pan.value = sweep.pan;
@@ -138,8 +140,4 @@ export function playSweep(sweep: { freq: number; start: number; adsr: number; en
 
   osc.start(audioContext.currentTime + sweep.start);
   osc.stop(audioContext.currentTime + sweep.start + sweep.end);
-}
-
-export function changeVolume() {
-    //if (volumeControl !== null) mainGainNode.gain.value = parseInt(volumeControl.value)
 }

@@ -15,7 +15,7 @@ const Preview = ({ isVisible, place, closePreview }: any) => {
         <AiFillCloseCircle></AiFillCloseCircle>
       </div>
       <div className="preview__description__container">
-        <div className="preview__title">{place?.vehicle.vehicle.id}</div>
+        <div className="preview__title">{place?.vehicle.vehicle.label}</div>
         <div className="preview__description">
           <ul>
             <li>latitude: {place?.vehicle.position.latitude}</li>
@@ -26,12 +26,13 @@ const Preview = ({ isVisible, place, closePreview }: any) => {
             <li>startTime: {place?.vehicle.trip.startTime}</li>
             <li>tripId: {place?.vehicle.trip.tripId}</li>
             <li>vehicle id: {place?.vehicle.vehicle.id}</li>
-            <li>vehicle label: {place?.vehicle.vehicle.label}</li>
           </ul>
         </div>
+        {/** 
         <div style={{display: 'flex'}}>
           <a className="preview__button" href={place?.seeMoreLink} target="_blank" rel="noreferrer">See more</a>
         </div>
+        */}
       </div>
     </div>
   );

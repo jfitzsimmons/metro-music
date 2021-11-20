@@ -2,3 +2,7 @@ main {
   display: flex;
   position: fixed;
 }
+
+ul {
+  list-style: none;
+}

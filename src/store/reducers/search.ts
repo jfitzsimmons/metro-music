@@ -2,7 +2,7 @@ import { SET_SEARCH_VISIBILITY, SET_SWEEP_TIME, SET_NEW_TEXT } from "../actions"
 import { SearchState } from "../models";
 
 const initialState: SearchState = {
-  searchIsVisible: false,
+  searchIsVisible: true,
   sweepTime: 0,
   textCues: [
     {

@@ -1,5 +1,9 @@
 import { LatLngExpression } from "leaflet";
 
+export interface ControlState {
+  volume: string;
+  pause: boolean;
+}
 export interface SearchState {
   searchIsVisible: boolean;
   sweepTime: number;
@@ -23,6 +27,7 @@ export interface PlaceState {
 export interface IState {
   search: SearchState;
   places: PlaceState;
+  controls: ControlState;
 }
 
 export interface Place {
