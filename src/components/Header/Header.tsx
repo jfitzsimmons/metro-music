@@ -8,9 +8,9 @@ import { ChangeEvent } from "react";
 const Header = ({ searchIsVisible, setSearchVisibility, volume, setVolume }: any) => {
   function handleChange(event:ChangeEvent<HTMLInputElement>) {
     if(event.target){
-      console.log(`onchange conditional | volume: ${volume}`)
+      //console.log(`onchange conditional | volume: ${volume}`)
       const value  = event.target.value.toString();
-      console.log(`onchange conditional | value: ${value}`)
+      //console.log(`onchange conditional | value: ${value}`)
       setVolume(value);
     }
   }
@@ -31,15 +31,16 @@ const Header = ({ searchIsVisible, setSearchVisibility, volume, setVolume }: any
 
       <span>St. Louis</span>
       {console.log('headerLOAD')}
-    </div><div>
-        <span>Volume: </span>
-        <input type="range" min="0.0" max="0.4" step="0.02"
-          value={volume} list="volumes" name="volume" onChange={handleChange} />
-        <datalist id="volumes">
-          <option value="0.0" label="Mute" />
-          <option value="0.4" label="100%" />
-        </datalist>
-      </div></>
+    </div>
+    <div>
+      <span>Volume: </span>
+      <input type="range" min="0.0" max="0.4" step="0.02"
+        value={volume} list="volumes" name="volume" onChange={handleChange} />
+      <datalist id="volumes">
+        <option value="0.0" label="Mute" />
+        <option value="0.4" label="100%" />
+      </datalist>
+    </div></>
   );
 };
 

@@ -1,4 +1,4 @@
-import { useEffect,useCallback,useRef, useState, createRef } from "react";
+import { useEffect,useCallback,useRef, useState, createRef, memo } from "react";
 import L, { LatLngExpression } from "leaflet";
 import { MapContainer, TileLayer, Marker, Tooltip } from "react-leaflet";
 import { connect } from "react-redux";
@@ -75,8 +75,6 @@ const organizeVehicles = (places: Entity[], pastPlaces: Entity[]) => {
   return updatedRoutes;
 }
 
-
-
 const Map = ({
   isVisible,
   places,
@@ -93,12 +91,9 @@ const Map = ({
   const defaultPosition: LatLngExpression = [38.62727, -90.19789];
   const prevPlaces = usePrevious(places);
 
- 
-
 const shapeWaves = useCallback((routes: Entity[]) => {
-  console.log(`SHAPE WAVES volume: ${volume}`)
   if (routes.length === 0 || !routes) {
-    return 2000;
+    return 3000;
   }
 
   store.dispatch(setNewText({
@@ -108,10 +103,6 @@ const shapeWaves = useCallback((routes: Entity[]) => {
   }));
 
 
-/** 
-  console.log(`routes`);
-  console.log(routes);
-*/
   let timestampDupes: any = {}
   timestampDupes = countBy(routes, (r: { vehicle: { timestamp: number; }; }) => r.vehicle.timestamp);
 
@@ -127,7 +118,6 @@ const shapeWaves = useCallback((routes: Entity[]) => {
     progress = parseInt(r.vehicle.timestamp)-concertStart;
     multiple = Math.floor(progress/8)
     chord = (progress >= 8) ? Math.floor((progress - 8*multiple)/2) : Math.floor(progress/2);
-
 
     type OctaveKey = keyof typeof noteFreq;
     let octave: OctaveKey = pickFrequency(r.vehicle.position.latitude);
@@ -190,6 +180,7 @@ const shapeWaves = useCallback((routes: Entity[]) => {
   
 
   const loadNewData = useCallback((timer) => {
+    //console.log("Load NEW DATA");
     timeout.current =  setTimeout(function(){
       const entityNew = async () => {
         const handler2 = fetch('/.netlify/functions/metro-updates').then((res) => res.json())
@@ -198,8 +189,8 @@ const shapeWaves = useCallback((routes: Entity[]) => {
           markerRefs.length = 0;
           setNewPlaceMarkers(b,false);
         } catch(err) {
-          console.error(err);
-          loadNewData(2000);
+          //console.error(err);
+          loadNewData(3000);
         }
       };
       entityNew();
@@ -221,7 +212,7 @@ const shapeWaves = useCallback((routes: Entity[]) => {
         }
       };
       entity();
-      loadNewData(10000);
+      loadNewData(11000);
       addToText({
         id: `beginshortly`,
         text: `The piece will begin shortly`,
@@ -253,18 +244,22 @@ const shapeWaves = useCallback((routes: Entity[]) => {
   };
 
   function renderItems() {
-    return (places) && places.map((place: Entity) => {
-      const newRef = createRef<L.Marker>();
-      markerRefs.push(newRef);
-      return (
-        <Marker
+    return (places) && places.map((place: Entity) => 
+    <Post key={place.id} place={place} />)
+  }
+
+  const Post = memo(({place}: any) => {
+    const newRef = createRef<L.Marker>();
+    markerRefs.push(newRef);
+    return(
+      <Marker
           key={place.vehicle.vehicle.id}
           position={[place.vehicle.position.latitude, place.vehicle.position.longitude]}
           eventHandlers={{ click: () => showPreview(place) }}
           icon={L.divIcon({
             iconSize: [40,40],
-            iconAnchor: [10, 10],
-            popupAnchor: [10, 0],
+            iconAnchor: [20, 20],
+            popupAnchor: [0, 0],
             shadowSize: [0, 0],
             className: `map-icon map-icon_${place.vehicle.vehicle.id} ${(selectedPlace && selectedPlace.vehicle.vehicle.id === place.vehicle.vehicle.id) && 'icon-selected'}`
           })}
@@ -273,10 +268,8 @@ const shapeWaves = useCallback((routes: Entity[]) => {
           {console.log(`in marker list`)}
           <Tooltip>{place.vehicle.vehicle.label}</Tooltip>
         </Marker>
-      )
-  
-    })
-  }
+    );  
+  });
 
   return (
    
