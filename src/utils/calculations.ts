@@ -38,4 +38,4 @@ export const countBy = (arr: any[], fn: any) =>
     return acc;
   }, {});
 
-  export const rndmRng = (h: number, l: number) => Math.random() * (h - l) + l;
+export const rndmRng = (h: number, l: number) => Math.random() * (h - l) + l;

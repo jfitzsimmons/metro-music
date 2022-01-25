@@ -17,8 +17,9 @@
   font-size: 3.5rem;
   align-self: center;
   font-weight: bold;
-  margin-top: -.3rem;
+  margin-top: -2rem;
   color: rgba(37, 51, 64, 1);
+  height: 3.6rem;
 }
 
 .icon-animation {
