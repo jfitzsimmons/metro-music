@@ -1,9 +1,10 @@
-import { SET_VOLUME, PAUSE_ORCHESTRA } from "../actions";
+import { SET_VOLUME, PAUSE_ORCHESTRA, CHOOSE_PROGRESSION } from "../actions";
 import { ControlState } from "../models";
 
 const initialState: ControlState = {
   volume: ".2",
-  pause: true,
+  pause: false,
+  progression: 0,
 };
 
 const controlsReducer = (
@@ -16,6 +17,9 @@ const controlsReducer = (
     }
     case PAUSE_ORCHESTRA: {
       return { ...state, pause: action.payload };
+    }
+    case CHOOSE_PROGRESSION: {
+      return { ...state, progression: action.payload };
     }
     default: {
       return state;

@@ -4,6 +4,7 @@ import { IState, TextCue } from "../../store/models";
 import {BiArrowBack} from "react-icons/bi"
 import "./Search.css";
 import { memo, useEffect, useRef } from "react";
+import Header from "../Header/Header";
 
 const Search = ({ searchIsVisible, closeSearch, textCues }: any) => {
   const bottomRef:  { current: HTMLElement | null } = useRef(null);
@@ -31,6 +32,7 @@ const Search = ({ searchIsVisible, closeSearch, textCues }: any) => {
       className={`search__container search__container--${
         searchIsVisible && "active"
       }`}>
+        <Header />
       <div className="search__header">
         <span className="search__header__close" role="button" onClick={() => closeSearch()}><BiArrowBack/></span>
         <span className="search__header__title">Search</span>

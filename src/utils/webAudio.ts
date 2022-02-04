@@ -1,31 +1,11 @@
+import { Octaves } from '../store/models';
 import { rndmRng } from './calculations';
-//import { wavetable } from './wavetable';
 
 let audioContext = new (window.AudioContext)();
-//let volumeControl: HTMLInputElement | null
-//volumeControl = document.querySelector<HTMLInputElement>("input[name='volume']");
-export interface Octaves {
-  1: Scale;
-  2: Scale;
-  3: Scale;
-  4: Scale;
-  5: Scale;
-  6: Scale;
-}
 
-export interface Scale {
-  "C": number,
-  "C#": number,
-  "D": number,
-  "D#": number,
-  "E": number,
-  "F": number,
-  "F#": number,
-  "G": number,
-  "G#":number,
-  "A": number,
-  "A#": number,
-  "B": number,
+export function resetAudioContext() {
+  audioContext.close();
+  audioContext = new (window.AudioContext)();
 }
 
 export const noteFreq:Octaves = {
@@ -115,14 +95,11 @@ export const noteFreq:Octaves = {
   }
 }
 
-//const wave = audioContext.createPeriodicWave(wavetable.real, wavetable.imag);
-
 export function playSweep(sweep: {volume: string; freq: number; start: number; adsr: number; end: any; pan: number; }) {
   let osc: OscillatorNode = audioContext.createOscillator();
   let gainNode: GainNode = audioContext.createGain();
   let stereo: StereoPannerNode = audioContext.createStereoPanner();
   let biquadFilter: BiquadFilterNode = audioContext.createBiquadFilter();
-  //console.log(`sweep.volume: ${parseFloat(sweep.volume)}`)
   gainNode.gain.value = parseFloat(sweep.volume)
   biquadFilter.type = "lowpass";
   biquadFilter.frequency.setValueAtTime(600, audioContext.currentTime);
@@ -130,7 +107,6 @@ export function playSweep(sweep: {volume: string; freq: number; start: number; a
   osc.detune.value = rndmRng(14,-14);
   gainNode.gain.cancelScheduledValues(audioContext.currentTime + sweep.start);
   gainNode.gain.setValueAtTime(0, audioContext.currentTime + sweep.start);
-  //if (volumeControl !== null) gainNode.gain.linearRampToValueAtTime(parseInt(volumeControl.value), audioContext.currentTime + sweep.start + sweep.adsr);
   gainNode.gain.linearRampToValueAtTime(parseFloat(sweep.volume), audioContext.currentTime + sweep.start + sweep.adsr);
 
   gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + sweep.start + sweep.end - (sweep.end - sweep.adsr)*.7);

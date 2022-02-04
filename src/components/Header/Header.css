@@ -1,8 +1,27 @@
 .header__container {
-  background-color: #f9b29c;
   padding: 1rem 0;
   color: white;
-  font-size: 2rem;
-  text-align: center;
-  font-weight: bold;
+  font-size: 1rem;
+  background: hsla(0, 0%, 16%, 0.7);
+  position: absolute;
+  z-index: 1;
+  left: 40vw;
+  width: 60vw;
 }
+
+.controls {
+  display: flex;
+  justify-content: space-around;
+}
+
+.volume {
+ display: flex;
+}
+
+.volume__display {
+  padding: 3vmin;
+  border-radius: 2vmin;
+  color: rgba(242, 179, 4, 1);
+  border: .5vmin solid rgba(242, 179, 4, 1);
+  text-align: center;
+ }
