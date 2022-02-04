@@ -3,17 +3,21 @@ import { LatLngExpression } from "leaflet";
 export interface ControlState {
   volume: string;
   pause: boolean;
+  progression: number;
 }
+
 export interface SearchState {
   searchIsVisible: boolean;
   sweepTime: number;
   textCues: TextCue[];
 }
+
 export interface TextCue {
   id: string;
   text: string;
   class?: string
 }
+
 export interface PlaceState {
   places: Entity[];
   pastPlaces: Entity[];
@@ -58,12 +62,36 @@ export interface Vehicle {
   timestamp: string;
   trip: {
     routeId: string;
-  ​​​​​  startDate: string;
-  ​​​​​  startTime: string;
-  ​​​​  tripId: string;
+    startDate: string;
+    startTime: string;
+    tripId: string;
   };
   vehicle: {
     id: string;
     label: string;
   }
+}
+
+export interface Octaves {
+  1: Scale;
+  2: Scale;
+  3: Scale;
+  4: Scale;
+  5: Scale;
+  6: Scale;
+}
+
+export interface Scale {
+  "C": number,
+  "C#": number,
+  "D": number,
+  "D#": number,
+  "E": number,
+  "F": number,
+  "F#": number,
+  "G": number,
+  "G#":number,
+  "A": number,
+  "A#": number,
+  "B": number,
 }

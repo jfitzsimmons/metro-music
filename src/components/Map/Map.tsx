@@ -1,20 +1,19 @@
-import { useEffect,useCallback,useRef, useState, createRef, memo } from "react";
+import { useEffect,useCallback,useRef, createRef, memo } from "react";
 import L, { LatLngExpression } from "leaflet";
 import { MapContainer, TileLayer, Marker, Tooltip } from "react-leaflet";
 import { connect } from "react-redux";
 import store from "../../store";
 import { setPlacePreviewVisibility, setSelectedPlace, setAllPlaces, setNewText } from "../../store/actions";
 import { IState, Entity, TextCue } from "../../store/models";
-import { playSweep, noteFreq } from "../../utils/webAudio"
+import { playSweep, noteFreq, resetAudioContext } from "../../utils/webAudio"
 import "./Map.css";
 import { countBy, distance, rndmRng } from "../../utils/calculations";
 import { getAdsr, pickFrequency } from "../../utils/waveShaping";
 
 
-const handler = fetch('/.netlify/functions/metro-updates').then((res) => res.json())
 let notesKey = [
-  [["C","G","E","A"],["C","G","E","A"],["F","A","C","E"],["G","B","D","F"]], // 1 4 5 CMajor
   [["F#","E","A","D"],["A","E","B","C#"],["E","B","F#","G#"],["F#","C#","E","A"]],//IV I V vim in A Major
+  [["C","G","E","A"],["C","G","E","A"],["F","A","C","E"],["G","B","D","F"]], // 1 4 5 CMajor
   [["D","F","G#","C"],["D","F","G#","B"],["C","D#","G","B"],["C","D#","G","B"]] // 2 5 1 C Minor???
 ] as const;
 let newVehicles: Entity[] = []
@@ -26,7 +25,6 @@ let multiple = 0;
 let chord = 0;
 let start = 0;
 let concertStart = 0;
-let progression = Math.round(rndmRng(2,0));
 
 function usePrevious<T>(value: T): T | undefined {
   const ref = useRef<T>();
@@ -84,15 +82,23 @@ const Map = ({
   setPlaceForPreview,
   setNewPlaceMarkers,
   addToText,
-  volume
+  volume,
+  pause,
+  progression,
 }: any) => {
   const timeout:  { current: NodeJS.Timeout | null } = useRef(null);
-  const [forceStop, setForceStop] = useState<boolean>(false);
+  //hard changes and soft changes.  hard dumps timeouts and starts everything from scratch
+  //soft changes with next api call
   const defaultPosition: LatLngExpression = [38.62727, -90.19789];
   const prevPlaces = usePrevious(places);
 
 const shapeWaves = useCallback((routes: Entity[]) => {
   if (routes.length === 0 || !routes) {
+    addToText({
+      id: `loading${Date.now()}`,
+      text: `No new updates.  Trying again.  loading...`,
+      class: `loading`,
+    });
     return 3000;
   }
 
@@ -101,7 +107,6 @@ const shapeWaves = useCallback((routes: Entity[]) => {
     text: `There are currently ${routes.length} busses making moves`,
     class: `newdata`
   }));
-
 
   let timestampDupes: any = {}
   timestampDupes = countBy(routes, (r: { vehicle: { timestamp: number; }; }) => r.vehicle.timestamp);
@@ -164,7 +169,7 @@ const shapeWaves = useCallback((routes: Entity[]) => {
           })
         );
         store.dispatch(setNewText({
-          id: `${r.vehicle.vehicle.id}${i}${start}${end}`,
+          id: `${r.vehicle.vehicle.id}${i}${start}${end}${Date.now()}`,
           text: `${r.vehicle.vehicle.label} ~ is playing ${note}${octave} for ${end.toFixed(3)} seconds`,
           class: `vehicle`,
         }));
@@ -176,34 +181,40 @@ const shapeWaves = useCallback((routes: Entity[]) => {
 
   let timeout: number = (parseInt(routes[routes.length-1].vehicle.timestamp)-minTime) * 1000;
   return timeout;
-},[volume]);
+},[addToText, progression, volume]);
   
 
   const loadNewData = useCallback((timer) => {
-    //console.log("Load NEW DATA");
-    timeout.current =  setTimeout(function(){
-      const entityNew = async () => {
-        const handler2 = fetch('/.netlify/functions/metro-updates').then((res) => res.json())
-        try {
-          const b = await handler2;
-          markerRefs.length = 0;
-          setNewPlaceMarkers(b,false);
-        } catch(err) {
-          //console.error(err);
-          loadNewData(3000);
-        }
-      };
-      entityNew();
-      
-      if (timeout.current) {
-        clearTimeout(timeout.current);
-      };
-    }, timer);
-  },[setNewPlaceMarkers]);
+    (timer) ?
+      timeout.current =  setTimeout(function(){
+        const entityNew = async () => {
+          const handler2 = fetch('/.netlify/functions/metro-updates').then((res) => res.json())
+          try {
+            const b = await handler2;
+            markerRefs.length = 0;
+            setNewPlaceMarkers(b,false);
+          } catch(err) {
+            addToText({
+              id: `loading${Date.now()}`,
+              text: `Call failed.  Trying again.  loading...`,
+              class: `loading`,
+            });
+            loadNewData(3000);
+          }
+        };
+        entityNew();
+        
+        if (timeout.current) {
+          clearTimeout(timeout.current);
+        };
+      }, timer)
+    : setNewPlaceMarkers([],true);
+  },[addToText, setNewPlaceMarkers]);
 
   useEffect(() => {
-    if ( initial && places && places.length <=0) {
+    if ( initial && !pause && places && places.length <=0) {
       const entity = async () => {
+        const handler = fetch('/.netlify/functions/metro-updates').then((res) => res.json())
         try {
           const a = await handler;
           setNewPlaceMarkers(a,true);
@@ -214,16 +225,23 @@ const shapeWaves = useCallback((routes: Entity[]) => {
       entity();
       loadNewData(11000);
       addToText({
-        id: `beginshortly`,
+        id: `beginshortly${Date.now()}`,
         text: `The piece will begin shortly`,
         class: `begin`,
       })
     } 
-    if (!initial && prevPlaces && prevPlaces.length >=0 && !forceStop && places !== prevPlaces) {
+    if (!initial && prevPlaces && prevPlaces.length >=0 && !pause && places !== prevPlaces) {
       let routes = organizeVehicles(places, prevPlaces);
       loadNewData(shapeWaves(routes));
     }
-  }, [addToText, forceStop, initial, loadNewData, places, prevPlaces, setNewPlaceMarkers, shapeWaves]);
+
+    if (timeout.current && pause && !initial) {
+      clearTimeout(timeout.current);
+      loadNewData(false);
+      resetAudioContext();
+    }
+    
+  }, [addToText, pause, initial, loadNewData, places, prevPlaces, setNewPlaceMarkers, shapeWaves]);
 
   const showPreview = (place: Entity) => {
     if (isVisible) {
@@ -265,21 +283,13 @@ const shapeWaves = useCallback((routes: Entity[]) => {
           })}
           ref= {newRef as React.RefObject<L.Marker>} 
         >
-          {console.log(`in marker list`)}
           <Tooltip>{place.vehicle.vehicle.label}</Tooltip>
         </Marker>
     );  
   });
 
   return (
-   
     <div className="map__container">
-
-       {console.log(`in MAP return`)}
-      { <button onClick={() => setForceStop(true)}>Force Stop</button> }
-
-      {(places && places.length >0) && 
-      
       <MapContainer
         center={defaultPosition}
         zoom={11}
@@ -292,10 +302,9 @@ const shapeWaves = useCallback((routes: Entity[]) => {
           url="https://api.mapbox.com/styles/v1/jfitzsimmons/ckvntg80w0gn014qc1s75efwr/tiles/256/{z}/{x}/{y}@2x?access_token=pk.eyJ1IjoiamZpdHpzaW1tb25zIiwiYSI6ImNrdm50am1vcDNnMGEybnFmZHpzYzJodWEifQ.Y-mgO21RLeOtil5V_Fu7dA"
         />
 
-        {renderItems()}
+        {(places && places.length >0) && renderItems()}
 
       </MapContainer>
-      }
     </div>
   );
 };
@@ -308,6 +317,8 @@ const mapStateToProps = (state: IState) => {
     initial: places.initial,
     selectedPlace: places.selectedPlace,
     volume: controls.volume,
+    pause: controls.pause,
+    progression: controls.progression
   };
 };
 
