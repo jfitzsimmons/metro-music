@@ -8,8 +8,8 @@
   top: 0;
   right: -100%;
   transition: all 0.2s ease-in-out;
-  color: #fff;
-  border-bottom-left-radius: 25px;
+  color: #fffd;
+  border-radius: 4vmin 0 0 4vmin;
 }
 
 .preview__container--active {
@@ -25,7 +25,7 @@
   right: 1rem;
   top: 1rem;
   font-size: 2rem;
-  color: white;
+  color: #fffd;
   cursor: pointer;
 }
 
@@ -36,7 +36,7 @@
   border-radius: 0.5rem;
   appearance: none;
   border: none;
-  color: white;
+  color: #fffd;
   padding: 1rem;
   font-size: 1rem;
   margin: 1rem auto;
@@ -51,7 +51,7 @@
 
 .preview__description {
   line-height: 1.5rem;
-  color: #B0B0B0;
+  color: #ccc;
   
 }
 
@@ -62,10 +62,9 @@
   background-position: center;
 }
 
-
 @media only screen and (min-width: 768px) {
   .preview__container {
-    top: auto;
+    top: 28vh;
     width: 33%;
   }
 }
