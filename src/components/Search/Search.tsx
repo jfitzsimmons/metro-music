@@ -35,7 +35,7 @@ const Search = ({ searchIsVisible, closeSearch, textCues }: any) => {
         <Header />
       <div className="search__header">
         <span className="search__header__close" role="button" onClick={() => closeSearch()}><BiArrowBack/></span>
-        <span className="search__header__title">Search</span>
+        <span className="search__header__title">Score</span>
       </div>
       <div className="search__list">
         {renderItems()}

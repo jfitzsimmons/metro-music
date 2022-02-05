@@ -6,7 +6,7 @@
   backdrop-filter: blur(8px) saturate(280%);
   background-color: hsla(0, 0%, 16%, 0.7);
   top: 0;
-  left: -40%;
+  left: -36vw;
   transition: all 0.5s ease-in-out;
 }
 
@@ -18,7 +18,7 @@
   padding: 1rem 0.5rem;
   text-align: center;
   position: relative;
-  color: white;
+  color: #fffd;
   font-size: 1.2rem;
   font-weight: bold;
 }
@@ -47,7 +47,7 @@
 
 .newdata {
   background: rgba(164, 14, 26, 1);
-  color: white;
+  color: #fffd;
   text-align: center;
 }
 
@@ -74,6 +74,6 @@
 @media only screen and (min-width: 768px) {
   .search__container {
     top: auto;
-    width: 40%;
+    width: 36vw;
   }
 }

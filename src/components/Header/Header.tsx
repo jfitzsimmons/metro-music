@@ -2,17 +2,18 @@ import { connect } from "react-redux";
 import { chooseProgression, pauseOrchestra, setSearchVisibility, setVolume } from "../../store/actions";
 import { IState } from "../../store/models";
 import "./Header.css";
-import { CgPlayListSearch } from "react-icons/cg";
+import { GiMusicalScore } from "react-icons/gi";
 import { ChangeEvent } from "react";
+import { BiArrowToLeft, BiArrowToRight } from "react-icons/bi";
 
-const Header = ({ 
-  searchIsVisible, 
+const Header = ({  
   setSearchVisibility, 
   volume, 
   setVolume, 
   chooseProgression,
   pause, 
-  pauseOrchestra }: any) => {
+  pauseOrchestra,
+  visible }: any) => {
 
   function handleVolume(event:ChangeEvent<HTMLInputElement>) {
     if(event.target){
@@ -28,45 +29,55 @@ const Header = ({
   }
   return (
     <div className="header__container">
+      <div className="header__container__top">
+        <div className="score-toggle">
+          {(visible) ? <BiArrowToLeft
+            style={{
+              fontSize: "2vmin",
+            }}
+            onClick={() => setSearchVisibility((visible) ? false : true)}
+          /> : <BiArrowToRight
+          style={{
+            fontSize: "2vmin",
+          }}
+          onClick={() => setSearchVisibility((visible) ? false : true)}
+          />}
+          <GiMusicalScore
+            style={{
+              fontSize: "4vmin",
+            }}
+            onClick={() => setSearchVisibility((visible) ? false : true)}
+          ></GiMusicalScore>
+        </div>
 
-      <CgPlayListSearch
-        style={{
-          fontSize: "3rem",
-          verticalAlign: "middle",
-          position: "absolute",
-          left: "1rem",
-          top: "10px",
-        }}
-        onClick={() => setSearchVisibility(!searchIsVisible)}
-      ></CgPlayListSearch>
-
-      <span>St. Louis</span>
+         <h1>Concert performed by St. Louis Metro Bus Drivers</h1>
+      </div>
     
       <div className="controls">
-        <button onClick={() => pauseOrchestra((pause===true)?false:true)}>{(pause===true)?'play':'pause'}</button>
+        <button className={(pause===true) ? "pause" : "play"} onClick={() => pauseOrchestra((pause===true)?false:true)}>{(pause===true)?<><div>play</div><svg viewBox="0 0 24 24" width="44" height="44" stroke="currentColor" stroke-width="1"  stroke-linecap="round" stroke-linejoin="round" className="play-icon"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg></>:<><div>pause</div><svg viewBox="0 0 24 24" width="44" height="44" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" className="play-icon"><rect x="2" y="4" width="7" height="18"></rect><rect x="14" y="4" width="7" height="18"></rect></svg></>}</button>
         
         <div className="volume">
-          <span>Volume: </span>
+          <div className="volume__display" style={{background: `hsla(209, ${Math.round((volume/.4)*100)}%, 20%, 1)`}}>
+            {Math.round((volume/.4)*100)}%
+            <br />
+            volume
+          </div>
           <input type="range" min="0.0" max="0.4" step="0.02"
             value={volume} list="volumes" name="volume" onChange={handleVolume} />
           <datalist id="volumes">
             <option value="0.0" label="Mute" />
             <option value="0.4" label="100%" />
           </datalist>
-          <div className="volume__display" style={{background: `hsla(209, ${Math.round((volume/.4)*100)}%, 20%, 1)`}}>
-            {Math.round((volume/.4)*100)}%
-            <br />
-            volume
-          </div>
         </div>
-        <div className="song">
-          <span>Song: </span>
+        <div className="flex-1"></div>
+        <div className="select-div song">
+        <label>Song: </label>
           <select
               onChange={handleProgression}
           >
-            <option>IV I V vim in A Major</option>
-            <option>1 4 5 CMajor</option>
-            <option>2 5 1 C Minor</option>
+            <option value={0}>IV I V vim in A Major</option>
+            <option value={1}>1 4 5 CMajor</option>
+            <option value={2}>2 5 1 C Minor</option>
           </select> 
         </div>
       </div>

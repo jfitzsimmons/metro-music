@@ -89,7 +89,7 @@ const Map = ({
   const timeout:  { current: NodeJS.Timeout | null } = useRef(null);
   //hard changes and soft changes.  hard dumps timeouts and starts everything from scratch
   //soft changes with next api call
-  const defaultPosition: LatLngExpression = [38.62727, -90.19789];
+  const defaultPosition: LatLngExpression = [38.65727, -90.29789];
   const prevPlaces = usePrevious(places);
 
 const shapeWaves = useCallback((routes: Entity[]) => {
@@ -151,7 +151,7 @@ const shapeWaves = useCallback((routes: Entity[]) => {
       start,
       end,
       freq: noteFreq[octave][note],
-      pan: (Math.abs(longAvg) - Math.abs(r.vehicle.position.longitude))*3,
+      pan: ((Math.abs(longAvg) - Math.abs(r.vehicle.position.longitude))*3)*(octave*.15),
       adsr: adsr * end,
     }
     const found = markerRefs.find((m) => (m.current && m && m.current.options && m.current.options.icon && m.current.options.icon.options && m.current.options.icon.options.className &&
