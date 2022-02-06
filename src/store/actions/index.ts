@@ -1,3 +1,3 @@
 export * from "./places";
-export * from "./search";
+export * from "./score";
 export * from "./controls";

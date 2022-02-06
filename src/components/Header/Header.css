@@ -193,6 +193,8 @@ select {
   width: 100%;
   color: rgba(242, 179, 4, .9);
   background-color: rgba(0,53,102,.9);
+  padding: 2vmin 8vmin 2vmin 2vmin;
+  font-size: 1.5rem;
 }
 
 .select-div {
@@ -206,5 +208,7 @@ select {
   pointer-events: none;
   color: #A40E1A;
   text-shadow: -1vmin 1vmin 0 rgba(242, 179, 4, .9), 1vmin 1vmin 0 rgba(242, 179, 4, .9), 1vmin -1vmin 0 rgba(242, 179, 4, .9), -1vmin -1vmin 0 rgba(242, 179, 4, .9);
-  margin-left: -35px;
+  right: 3vmin;
+  position: absolute;
+  top: calc(2.7vmin + 2.2rem);
 }

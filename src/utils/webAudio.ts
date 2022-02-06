@@ -101,8 +101,10 @@ export function playSweep(sweep: {volume: string; freq: number; start: number; a
   let stereo: StereoPannerNode = audioContext.createStereoPanner();
   let biquadFilter: BiquadFilterNode = audioContext.createBiquadFilter();
   gainNode.gain.value = parseFloat(sweep.volume)
-  biquadFilter.type = "lowpass";
-  biquadFilter.frequency.setValueAtTime(600, audioContext.currentTime);
+  biquadFilter.type = "bandpass";
+  biquadFilter.Q.value=0.201582330197;
+  biquadFilter.frequency.setValueAtTime(210, audioContext.currentTime);
+  
   osc.frequency.value = sweep.freq;
   osc.detune.value = rndmRng(14,-14);
   gainNode.gain.cancelScheduledValues(audioContext.currentTime + sweep.start);

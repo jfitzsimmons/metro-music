@@ -1,4 +1,4 @@
-.search__container {
+.score__container {
   z-index: 1000;
   position: fixed;
   width: 100%;
@@ -10,11 +10,11 @@
   transition: all 0.5s ease-in-out;
 }
 
-.search__container--active {
+.score__container--active {
   left: 0;
 }
 
-.search__header {
+.score__header {
   padding: 1rem 0.5rem;
   text-align: center;
   position: relative;
@@ -23,12 +23,12 @@
   font-weight: bold;
 }
 
-.search__header__close {
+.score__header__close {
   position: absolute;
   left: 1rem;
 }
 
-.search__list {
+.score__list {
   overflow-y: scroll;
   height: 88vh;
   margin-bottom: 4rem;
@@ -37,7 +37,7 @@
   font-family: monospace;
 }
 
-.search__list__item:hover {
+.score__list__item:hover {
   filter: none;
 }
 
@@ -72,7 +72,7 @@
 }
 
 @media only screen and (min-width: 768px) {
-  .search__container {
+  .score__container {
     top: auto;
     width: 36vw;
   }

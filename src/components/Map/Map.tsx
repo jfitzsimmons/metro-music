@@ -12,14 +12,21 @@ import { getAdsr, pickFrequency } from "../../utils/waveShaping";
 
 
 let notesKey = [
-  [["F#","E","A","D"],["A","E","B","C#"],["E","B","F#","G#"],["F#","C#","E","A"]],//IV I V vim in A Major
-  [["C","G","E","A"],["C","G","E","A"],["F","A","C","E"],["G","B","D","F"]], // 1 4 5 CMajor
-  [["D","F","G#","C"],["D","F","G#","B"],["C","D#","G","B"],["C","D#","G","B"]] // 2 5 1 C Minor???
+  [["F#","E","A","D"],["A","E","B","C#"],["E","B","F#","G#"],["F#","C#","E","A"]],
+  [["C","G","E","A"],["F","A","C","E"],["C","G","E","A"],["G","B","D","F"]],
+  [["D","F","G#","C"],["D","F","G#","B"],["C","D#","G","B"],["C","D#","G","A"]],
+  [["B","G","F#","D"],["E","B","G","D"],["E","C","B","G"],["A","F#","C","D"]],
+  [["A","E","C","G#"],["E","B","G#","D"],["G","D","B","F#"],["D","A","C#","F#"]],
+  [["B","F#","D","A"],["F#","C#","A","E"],["G","B","D","F#"],["E","B","D","G"]],
+  [["G#","C","D#","G"],["A","D","A#","F"],["G","A#","D","F"],["G","A#","D","E"]],
+  [["D#","G","A#","D"],["D","F","A","C"],["G","B","D","F#"],["G","B","D","E"]],
+  [["A","C","E","G"],["F","G#","C","D#"],["C","E","G","B"],["G","B","D","F#"]],
+  [["F#","A","C#","E"],["E","G#","B","D#"],["D","F#","A","C#"],["C#","F","G#","B"]]
 ] as const;
 let newVehicles: Entity[] = []
 let retiredVehicles: Entity[] = []
 let markerRefs: React.RefObject<L.Marker>[] = [];  
-let longAvg= -90.24467340251744
+let longAvg= -90.24467340251744 
 let progress = 0;
 let multiple = 0;
 let chord = 0;
@@ -85,6 +92,7 @@ const Map = ({
   volume,
   pause,
   progression,
+  changeType
 }: any) => {
   const timeout:  { current: NodeJS.Timeout | null } = useRef(null);
   //hard changes and soft changes.  hard dumps timeouts and starts everything from scratch
@@ -145,13 +153,16 @@ const shapeWaves = useCallback((routes: Entity[]) => {
     if (end > 4) end = 4;
     if (r.movement && r.movement.mph) adsr = getAdsr(r.movement.mph);
 
+    if (r.vehicle.position.latitude  >  38.66) longAvg = -90.29975891113281;
+    let pan = ((Math.abs(longAvg) - Math.abs(r.vehicle.position.longitude))*6)*(octave*.15);
+
     let sweep = {
       volume,
       i,
       start,
       end,
       freq: noteFreq[octave][note],
-      pan: ((Math.abs(longAvg) - Math.abs(r.vehicle.position.longitude))*3)*(octave*.15),
+      pan,
       adsr: adsr * end,
     }
     const found = markerRefs.find((m) => (m.current && m && m.current.options && m.current.options.icon && m.current.options.icon.options && m.current.options.icon.options.className &&
@@ -170,7 +181,7 @@ const shapeWaves = useCallback((routes: Entity[]) => {
         );
         store.dispatch(setNewText({
           id: `${r.vehicle.vehicle.id}${i}${start}${end}${Date.now()}`,
-          text: `${r.vehicle.vehicle.label} ~ is playing ${note}${octave} for ${end.toFixed(3)} seconds`,
+          text: `${r.vehicle.vehicle.label} ~ is playing ${note}${octave} for ${(end*2).toFixed(3)} beats`,
           class: `vehicle`,
         }));
       }
@@ -237,11 +248,14 @@ const shapeWaves = useCallback((routes: Entity[]) => {
 
     if (timeout.current && pause && !initial) {
       clearTimeout(timeout.current);
-      loadNewData(false);
-      resetAudioContext();
+      
+      if (changeType === "dChanges"){
+        resetAudioContext();
+        loadNewData(false);
+      }
     }
     
-  }, [addToText, pause, initial, loadNewData, places, prevPlaces, setNewPlaceMarkers, shapeWaves]);
+  }, [addToText, pause, initial, loadNewData, places, prevPlaces, setNewPlaceMarkers, shapeWaves, changeType]);
 
   const showPreview = (place: Entity) => {
     if (isVisible) {
@@ -318,7 +332,8 @@ const mapStateToProps = (state: IState) => {
     selectedPlace: places.selectedPlace,
     volume: controls.volume,
     pause: controls.pause,
-    progression: controls.progression
+    progression: controls.progression,
+    changeType: controls.changeType,
   };
 };
 

@@ -4,10 +4,11 @@ export interface ControlState {
   volume: string;
   pause: boolean;
   progression: number;
+  changeType: string;
 }
 
-export interface SearchState {
-  searchIsVisible: boolean;
+export interface scoreState {
+  scoreIsVisible: boolean;
   sweepTime: number;
   textCues: TextCue[];
 }
@@ -29,7 +30,7 @@ export interface PlaceState {
 }
 
 export interface IState {
-  search: SearchState;
+  score: scoreState;
   places: PlaceState;
   controls: ControlState;
 }
