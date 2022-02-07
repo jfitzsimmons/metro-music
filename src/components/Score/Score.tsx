@@ -1,12 +1,12 @@
 import { connect } from "react-redux";
-import { setSearchVisibility } from "../../store/actions";
+import { setScoreVisibility } from "../../store/actions";
 import { IState, TextCue } from "../../store/models";
 import {BiArrowBack} from "react-icons/bi"
-import "./Search.css";
+import "./Score.css";
 import { memo, useEffect, useRef } from "react";
 import Header from "../Header/Header";
 
-const Search = ({ searchIsVisible, closeSearch, textCues }: any) => {
+const Score = ({ scoreIsVisible, closescore, textCues }: any) => {
   const bottomRef:  { current: HTMLElement | null } = useRef(null);
 
   function isInViewport(element: HTMLElement ) {
@@ -29,15 +29,15 @@ const Search = ({ searchIsVisible, closeSearch, textCues }: any) => {
 
   return (
     <div
-      className={`search__container search__container--${
-        searchIsVisible && "active"
+      className={`score__container score__container--${
+        scoreIsVisible && "active"
       }`}>
         <Header />
-      <div className="search__header">
-        <span className="search__header__close" role="button" onClick={() => closeSearch()}><BiArrowBack/></span>
-        <span className="search__header__title">Score</span>
+      <div className="score__header">
+        <span className="score__header__close" role="button" onClick={() => closescore()}><BiArrowBack/></span>
+        <span className="score__header__title">Score</span>
       </div>
-      <div className="search__list">
+      <div className="score__list">
         {renderItems()}
         <div id="bottom-reference" className="bottom-reference" ref={bottomRef as React.RefObject<HTMLDivElement>}>
         &#119070;
@@ -55,25 +55,25 @@ var truncateAfter = function (str:string, pattern:string) {
 } 
 const Post = memo(({text, className}: any) => {
   return(
-    <div className={`${className} search__list__item`}>
+    <div className={`${className} score__list__item`}>
       {(className === "vehicle") ? <><span className="bus">{truncateAfter(text, "~")}</span><span className="triangle"></span><span className="note">{truncateBefore(text, "~")}</span></> : text}
     </div>
   );  
 });
 
 const mapStateToProps = (state: IState) => {
-  const { search } = state;
+  const { score } = state;
   return {
-    searchIsVisible: search.searchIsVisible, 
-    textCues: search.textCues,
+    scoreIsVisible: score.scoreIsVisible, 
+    textCues: score.textCues,
   };
 };
 
 const mapDispatchToProps = (dispatch: any) => {
   return {
-    closeSearch: () =>
-      dispatch(setSearchVisibility(false)),
+    closescore: () =>
+      dispatch(setScoreVisibility(false)),
   };
 };
 
-export default connect(mapStateToProps, mapDispatchToProps)(Search);
+export default connect(mapStateToProps, mapDispatchToProps)(Score);

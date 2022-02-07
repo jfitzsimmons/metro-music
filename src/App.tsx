@@ -2,17 +2,15 @@ import "./App.css";
 
 //import Header from "./components/Header/Header";
 import Map from "./components/Map/Map";
-import Search from "./components/Search/Search";
+import Score from "./components/Score/Score";
 import Preview from "./components/Preview/Preview";
-//import Form from "./components/Form/Form";
 
 function App() {
   return (
       <main>
-        <Search /> 
+        <Score /> 
         <Map />
         <Preview />
-       {/**  <Form />  */}
       </main>
   );
 }

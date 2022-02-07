@@ -1,6 +1,7 @@
 export const SET_VOLUME = "SET_VOLUME";
 export const PAUSE_ORCHESTRA = "PAUSE_ORCHESTRA";
 export const CHOOSE_PROGRESSION = "CHOOSE_PROGRESSION";
+export const SET_CHANGE_TYPE = "SET_CHANGE_TYPE";
 
 export const setVolume = (volume: string) => ({
   type: SET_VOLUME,
@@ -13,4 +14,8 @@ export const pauseOrchestra = (pause: boolean) => ({
 export const chooseProgression = (progression: number) => ({
   type: CHOOSE_PROGRESSION,
   payload: progression,
+});
+export const setChangeType = (changeType: string) => ({
+  type: SET_CHANGE_TYPE,
+  payload: changeType,
 });

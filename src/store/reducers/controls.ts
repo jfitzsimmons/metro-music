@@ -1,10 +1,11 @@
-import { SET_VOLUME, PAUSE_ORCHESTRA, CHOOSE_PROGRESSION } from "../actions";
+import { SET_VOLUME, PAUSE_ORCHESTRA, CHOOSE_PROGRESSION, SET_CHANGE_TYPE } from "../actions";
 import { ControlState } from "../models";
 
 const initialState: ControlState = {
   volume: ".2",
   pause: false,
   progression: 0,
+  changeType: "ndChanges"
 };
 
 const controlsReducer = (
@@ -20,6 +21,9 @@ const controlsReducer = (
     }
     case CHOOSE_PROGRESSION: {
       return { ...state, progression: action.payload };
+    }
+    case SET_CHANGE_TYPE: {
+      return { ...state, chagneType: action.payload };
     }
     default: {
       return state;

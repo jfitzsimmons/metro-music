@@ -1,8 +1,8 @@
-import { SET_SEARCH_VISIBILITY, SET_SWEEP_TIME, SET_NEW_TEXT } from "../actions";
-import { SearchState } from "../models";
+import { SET_SCORE_VISIBILITY, SET_SWEEP_TIME, SET_NEW_TEXT } from "../actions";
+import { scoreState } from "../models";
 
-const initialState: SearchState = {
-  searchIsVisible: true,
+const initialState: scoreState = {
+  scoreIsVisible: true,
   sweepTime: 0,
   textCues: [
     {
@@ -13,13 +13,13 @@ const initialState: SearchState = {
   ],
 };
 
-const searchReducer = (
+const scoreReducer = (
   state = initialState,
   action: { type: string; payload: any }
 ) => {
   switch (action.type) {
-    case SET_SEARCH_VISIBILITY: {
-      return { ...state, searchIsVisible: action.payload };
+    case SET_SCORE_VISIBILITY: {
+      return { ...state, scoreIsVisible: action.payload };
     }
     case SET_SWEEP_TIME: {
       return { ...state, sweepTime: action.payload };
@@ -33,4 +33,4 @@ const searchReducer = (
   }
 };
 
-export default searchReducer;
+export default scoreReducer;
