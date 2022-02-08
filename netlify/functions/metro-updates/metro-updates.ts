@@ -20,7 +20,7 @@ export const handler: Handler = function(event, context, callback) {
     .catch(function (err) {
       callback(null, {
         statusCode: 503,
-        body: JSON.stringify({}),
+        body: JSON.stringify({err}),
       });
   });;
 };
