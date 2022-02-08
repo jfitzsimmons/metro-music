@@ -61,7 +61,7 @@ const Header = ({
       </div>
     
       <div className="controls">
-        <button className={(pause===true) ? "pause" : "play"} onClick={() => pauseOrchestra((pause===true)?false:true)}>{(pause===true)?<><div>play</div><svg viewBox="0 0 24 24" width="44" height="44" stroke="currentColor" strokeWidth="2"  stroke-linecap="round" stroke-linejoin="round" className="play-icon"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg></>:<><div>pause</div><svg viewBox="0 0 24 24" width="44" height="44" stroke="currentColor" strokeWidth="2" stroke-linecap="round" stroke-linejoin="round" className="play-icon"><rect x="2" y="4" width="7" height="18"></rect><rect x="14" y="4" width="7" height="18"></rect></svg></>}</button>
+        <button className={(pause===true) ? "pause" : "play"} onClick={() => pauseOrchestra((pause===true)?false:true)}>{(pause===true)?<><div>play</div><svg viewBox="0 0 24 24" width="44" height="44" stroke="currentColor" strokeWidth="2"  strokeLinecap="round" strokeLinejoin="round" className="play-icon"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg></>:<><div>pause</div><svg viewBox="0 0 24 24" width="44" height="44" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="play-icon"><rect x="2" y="4" width="7" height="18"></rect><rect x="14" y="4" width="7" height="18"></rect></svg></>}</button>
         
         <div className="volume">
           <div className="volume__display" style={{background: `hsla(209, ${Math.round((volume/.4)*100)}%, 20%, 1)`}}>
