@@ -43,7 +43,7 @@
 button {
   font-weight: bold;
   aspect-ratio: 1 / 1;
-  height: 9vmin;
+  height: 11.5vmin;
   border: .3vmin solid rgba(242, 179, 4, .9);
   color: rgba(242, 179, 4, .9);
   text-align: center;
@@ -85,6 +85,7 @@ button span {
   display: flex;
   justify-content: center;
   align-items: center;
+  padding: 1vmin;
  }
 
  .flex-1 {

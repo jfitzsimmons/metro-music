@@ -2,27 +2,13 @@ import { useEffect,useCallback,useRef, createRef, memo } from "react";
 import L, { LatLngExpression } from "leaflet";
 import { MapContainer, TileLayer, Marker, Tooltip } from "react-leaflet";
 import { connect } from "react-redux";
-import store from "../../store";
 import { setPlacePreviewVisibility, setSelectedPlace, setAllPlaces, setNewText } from "../../store/actions";
 import { IState, Entity, TextCue } from "../../store/models";
-import { playSweep, noteFreq, resetAudioContext } from "../../utils/webAudio"
-import "./Map.css";
+import { playSweep, noteFreq, resetAudioContext, notesKey } from "../../utils/webAudio"
 import { countBy, distance, rndmRng } from "../../utils/calculations";
 import { getAdsr, pickFrequency } from "../../utils/waveShaping";
+import "./Map.css";
 
-
-let notesKey = [
-  [["F#","E","A","D"],["A","E","B","C#"],["E","B","F#","G#"],["F#","C#","E","A"]],
-  [["C","G","E","A"],["F","A","C","E"],["C","G","E","A"],["G","B","D","F"]],
-  [["D","F","G#","C"],["D","F","G#","B"],["C","D#","G","B"],["C","D#","G","A"]],
-  [["B","G","F#","D"],["E","B","G","D"],["E","C","B","G"],["A","F#","C","D"]],
-  [["A","E","C","G#"],["E","B","G#","D"],["G","D","B","F#"],["D","A","C#","F#"]],
-  [["B","F#","D","A"],["F#","C#","A","E"],["G","B","D","F#"],["E","B","D","G"]],
-  [["G#","C","D#","G"],["A","D","A#","F"],["G","A#","D","F"],["G","A#","D","E"]],
-  [["D#","G","A#","D"],["D","F","A","C"],["G","B","D","F#"],["G","B","D","E"]],
-  [["A","C","E","G"],["F","G#","C","D#"],["C","E","G","B"],["G","B","D","F#"]],
-  [["F#","A","C#","E"],["E","G#","B","D#"],["D","F#","A","C#"],["C#","F","G#","B"]]
-] as const;
 let newVehicles: Entity[] = []
 let retiredVehicles: Entity[] = []
 let markerRefs: React.RefObject<L.Marker>[] = [];  
@@ -99,6 +85,7 @@ const Map = ({
   //soft changes with next api call
   const defaultPosition: LatLngExpression = [38.65727, -90.29789];
   const prevPlaces = usePrevious(places);
+  const prevPause = usePrevious(pause);
 
 const shapeWaves = useCallback((routes: Entity[]) => {
   if (routes.length === 0 || !routes) {
@@ -107,14 +94,14 @@ const shapeWaves = useCallback((routes: Entity[]) => {
       text: `No new updates.  Trying again.  loading...`,
       class: `loading`,
     });
-    return 3000;
+    return 4000;
   }
 
-  store.dispatch(setNewText({
+  addToText({
     id: `newdata${Date.now()}`,
     text: `There are currently ${routes.length} busses making moves`,
     class: `newdata`
-  }));
+  });
 
   let timestampDupes: any = {}
   timestampDupes = countBy(routes, (r: { vehicle: { timestamp: number; }; }) => r.vehicle.timestamp);
@@ -136,7 +123,7 @@ const shapeWaves = useCallback((routes: Entity[]) => {
     let octave: OctaveKey = pickFrequency(r.vehicle.position.latitude);
     let noteChar = noteFreq[octave];
     type NoteKey = keyof typeof noteChar;
-    let note: NoteKey = notesKey[progression][chord][Math.round(rndmRng(3,0))];
+    let note: NoteKey = notesKey[progression.index][chord][Math.round(rndmRng(3,0))];
 
     if (routes[i-1] && r.vehicle.timestamp === routes[i-1].vehicle.timestamp) { 
         start = parseInt(r.vehicle.timestamp)-minTime+(1/timestampDupes[r.vehicle.timestamp]*count) 
@@ -179,14 +166,13 @@ const shapeWaves = useCallback((routes: Entity[]) => {
             className: `map-icon icon-animation map-icon_${r.vehicle.vehicle.id}`
           })
         );
-        store.dispatch(setNewText({
+        addToText({
           id: `${r.vehicle.vehicle.id}${i}${start}${end}${Date.now()}`,
           text: `${r.vehicle.vehicle.label} ~ is playing ${note}${octave} for ${(end*2).toFixed(3)} beats`,
           class: `vehicle`,
-        }));
+        });
       }
     },start*1000)
-
     playSweep(sweep);
   });
 
@@ -210,7 +196,7 @@ const shapeWaves = useCallback((routes: Entity[]) => {
               text: `Call failed.  Trying again.  loading...`,
               class: `loading`,
             });
-            loadNewData(3000);
+            loadNewData(4000);
           }
         };
         entityNew();
@@ -230,15 +216,20 @@ const shapeWaves = useCallback((routes: Entity[]) => {
           const a = await handler;
           setNewPlaceMarkers(a,true);
         } catch(err) {
-          console.error(err);
+          addToText({
+            id: `loading${Date.now()}`,
+            text: `Call failed.  Trying again.  loading...`,
+            class: `loading`,
+          });
+          loadNewData(4000);
         }
       };
       entity();
       loadNewData(11000);
       addToText({
         id: `beginshortly${Date.now()}`,
-        text: `The piece will begin shortly`,
-        class: `begin`,
+        text: `loading... The piece will begin shortly. loading...`,
+        class: `loading`,
       })
     } 
     if (!initial && prevPlaces && prevPlaces.length >=0 && !pause && places !== prevPlaces) {
@@ -246,16 +237,21 @@ const shapeWaves = useCallback((routes: Entity[]) => {
       loadNewData(shapeWaves(routes));
     }
 
+    if (!pause && prevPause) {
+        if(timeout && timeout.current)clearTimeout(timeout.current);
+        resetAudioContext();
+        let timeElapsed: number = (Math.floor(Date.now() / 1000) - parseInt(places[0].vehicle.timestamp));
+        (timeElapsed > 50) ?  loadNewData(false) :  loadNewData(4000);
+    }
+
     if (timeout.current && pause && !initial) {
-      clearTimeout(timeout.current);
-      
       if (changeType === "dChanges"){
+        clearTimeout(timeout.current);
         resetAudioContext();
         loadNewData(false);
       }
     }
-    
-  }, [addToText, pause, initial, loadNewData, places, prevPlaces, setNewPlaceMarkers, shapeWaves, changeType]);
+  }, [addToText, pause, initial, loadNewData, places, prevPlaces, setNewPlaceMarkers, shapeWaves, changeType, prevPause]);
 
   const showPreview = (place: Entity) => {
     if (isVisible) {
