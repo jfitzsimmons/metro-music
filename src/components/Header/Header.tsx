@@ -17,12 +17,15 @@ const Header = ({
   visible,
   addToText }: any) => {
 
+  /** 
   function radioHandler(event:ChangeEvent<HTMLInputElement>) {
     if(event.target){
       const value  = event.target.value.toString();
       setChangeType(value);
     }
   }
+  */
+ 
   const delayText = debounce(() => {
     addToText({
       id: `volume${Date.now()}`,
