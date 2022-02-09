@@ -3,8 +3,13 @@ import { LatLngExpression } from "leaflet";
 export interface ControlState {
   volume: string;
   pause: boolean;
-  progression: number;
+  progression: Progression;
   changeType: string;
+}
+
+export interface Progression {
+  label: string;
+  index: number;
 }
 
 export interface scoreState {

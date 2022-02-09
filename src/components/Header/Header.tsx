@@ -1,10 +1,11 @@
 import { connect } from "react-redux";
-import { chooseProgression, pauseOrchestra, setChangeType, setScoreVisibility, setVolume } from "../../store/actions";
-import { IState } from "../../store/models";
+import { chooseProgression, pauseOrchestra, setChangeType, setNewText, setScoreVisibility, setVolume } from "../../store/actions";
+import { IState, Progression, TextCue } from "../../store/models";
 import "./Header.css";
 import { GiMusicalScore } from "react-icons/gi";
 import { ChangeEvent } from "react";
 import { BiArrowToLeft, BiArrowToRight } from "react-icons/bi";
+import { debounce } from "../../utils/tools";
 
 const Header = ({  
   setScoreVisibility, 
@@ -13,7 +14,8 @@ const Header = ({
   chooseProgression,
   pause, 
   pauseOrchestra,
-  visible }: any) => {
+  visible,
+  addToText }: any) => {
 
   function radioHandler(event:ChangeEvent<HTMLInputElement>) {
     if(event.target){
@@ -21,6 +23,13 @@ const Header = ({
       setChangeType(value);
     }
   }
+  const delayText = debounce(() => {
+    addToText({
+      id: `volume${Date.now()}`,
+      text: `Volume will be set to ${Math.round((parseFloat(volume)/.8)*100)}% with the next batch of data.`,
+      class: `controls-change`,
+    });
+}, 500);
 
   function handleVolume(event:ChangeEvent<HTMLInputElement>) {
     if(event.target){
@@ -28,12 +37,30 @@ const Header = ({
       setVolume(value);
     }
   }
+  
   function handleProgression(event:ChangeEvent<HTMLSelectElement>) {
     if(event.target){
-      const value  = event.target.value.toString();
-      chooseProgression(value);
+      const {  options, selectedIndex } = event.target;
+      const index  = event.target.value.toString();
+      const label = options[selectedIndex].text;
+      chooseProgression({label,index});
+      addToText({
+        id: `progression${Date.now()}`,
+        text: `${label} will start playing with the next batch of data.`,
+        class: `controls-change`,
+      });
     }
   }
+
+  function handlePlayback() {
+      pauseOrchestra((pause===true)?false:true)
+      addToText({
+        id: `playback${Date.now()}`,
+        text: `The piece will ${(pause===false) ? "stop after this batch of data." : "begin again shortly."} `,
+        class: `controls-change`,
+      });
+  }
+
   return (
     <div className="header__container">
       <div className="header__container__top">
@@ -61,22 +88,25 @@ const Header = ({
       </div>
     
       <div className="controls">
-        <button className={(pause===true) ? "pause" : "play"} onClick={() => pauseOrchestra((pause===true)?false:true)}>{(pause===true)?<><div>play</div><svg viewBox="0 0 24 24" width="44" height="44" stroke="currentColor" strokeWidth="2"  strokeLinecap="round" strokeLinejoin="round" className="play-icon"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg></>:<><div>pause</div><svg viewBox="0 0 24 24" width="44" height="44" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="play-icon"><rect x="2" y="4" width="7" height="18"></rect><rect x="14" y="4" width="7" height="18"></rect></svg></>}</button>
+        <button className={(pause===true) ? "pause" : "play"} onMouseUp={handlePlayback}>
+          {(pause===true)?<><div>play</div><svg viewBox="0 0 24 24" width="44" height="44" stroke="currentColor" strokeWidth="2"  strokeLinecap="round" strokeLinejoin="round" className="play-icon"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg></>:<><div>pause</div><svg viewBox="0 0 24 24" width="44" height="44" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="play-icon"><rect x="2" y="4" width="7" height="18"></rect><rect x="14" y="4" width="7" height="18"></rect></svg></>}
+        </button>
         
         <div className="volume">
-          <div className="volume__display" style={{background: `hsla(209, ${Math.round((volume/.4)*100)}%, 20%, 1)`}}>
-            {Math.round((volume/.4)*100)}%
+          <div className="volume__display" style={{background: `hsla(209, ${Math.round((volume/.8)*100)}%, 20%, 1)`}}>
+            {Math.round((volume/.8)*100)}%
             <br />
             volume
           </div>
-          <input type="range" min="0.0" max="0.4" step="0.02"
-            value={volume} list="volumes" name="volume" onChange={handleVolume} />
+          <input type="range" min="0.0" max="0.8" step="0.025"
+            value={volume} list="volumes" name="volume" onChange={(e) => handleVolume(e)} onMouseUp={delayText} />
           <datalist id="volumes">
             <option value="0.0" label="Mute" />
-            <option value="0.4" label="100%" />
+            <option value="0.8" label="100%" />
           </datalist>
         </div>
         <div className="flex-1">
+          {/**
         <fieldset>
         <input
             type="radio"
@@ -96,6 +126,7 @@ const Header = ({
           />
           <label htmlFor="dChanges">disruptive changes</label>
           </fieldset>
+           */}
         </div>
         <div className="select-div song">
         <label>Song: </label>
@@ -136,10 +167,12 @@ const mapDispatchToProps = (dispatch: any) => {
       dispatch(setVolume(payload)),
     pauseOrchestra: (payload: boolean) =>
       dispatch(pauseOrchestra(payload)),
-    chooseProgression: (payload: number) =>
+    chooseProgression: (payload: Progression) =>
       dispatch(chooseProgression(payload)),
     setChangeType: (payload: string) =>
       dispatch(setChangeType(payload)),
+    addToText: (payload: TextCue) =>
+      dispatch(setNewText(payload)),
   };
 };
 

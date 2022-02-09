@@ -8,6 +8,19 @@ export function resetAudioContext() {
   audioContext = new (window.AudioContext)();
 }
 
+export let notesKey = [
+  [["F#","E","A","D"],["A","E","B","C#"],["E","B","F#","G#"],["F#","C#","E","A"]],
+  [["C","G","E","A"],["F","A","C","E"],["C","G","E","A"],["G","B","D","F"]],
+  [["D","F","G#","C"],["D","F","G#","B"],["C","D#","G","B"],["C","D#","G","A"]],
+  [["B","G","F#","D"],["E","B","G","D"],["E","C","B","G"],["A","F#","C","D"]],
+  [["A","E","C","G#"],["E","B","G#","D"],["G","D","B","F#"],["D","A","C#","F#"]],
+  [["B","F#","D","A"],["F#","C#","A","E"],["G","B","D","F#"],["E","B","D","G"]],
+  [["G#","C","D#","G"],["A","D","A#","F"],["G","A#","D","F"],["G","A#","D","E"]],
+  [["D#","G","A#","D"],["D","F","A","C"],["G","B","D","F#"],["G","B","D","E"]],
+  [["A","C","E","G"],["F","G#","C","D#"],["C","E","G","B"],["G","B","D","F#"]],
+  [["F#","A","C#","E"],["E","G#","B","D#"],["D","F#","A","C#"],["C#","F","G#","B"]]
+] as const;
+
 export const noteFreq:Octaves = {
   1: {
     "C": 32.703195662574829,
@@ -100,18 +113,24 @@ export function playSweep(sweep: {volume: string; freq: number; start: number; a
   let gainNode: GainNode = audioContext.createGain();
   let stereo: StereoPannerNode = audioContext.createStereoPanner();
   let biquadFilter: BiquadFilterNode = audioContext.createBiquadFilter();
-  gainNode.gain.value = parseFloat(sweep.volume)
+
+  if (sweep.freq > 150 && sweep.freq < 500) {
+    let cut = (176-Math.abs(sweep.freq - 325))*.0007
+    sweep.volume = (parseFloat(sweep.volume) - cut).toString();
+  }
+
   biquadFilter.type = "bandpass";
-  biquadFilter.Q.value=0.201582330197;
-  biquadFilter.frequency.setValueAtTime(210, audioContext.currentTime);
+  biquadFilter.Q.value=2;
+  biquadFilter.frequency.setValueAtTime(72, audioContext.currentTime);
   
   osc.frequency.value = sweep.freq;
   osc.detune.value = rndmRng(14,-14);
+  
   gainNode.gain.cancelScheduledValues(audioContext.currentTime + sweep.start);
   gainNode.gain.setValueAtTime(0, audioContext.currentTime + sweep.start);
   gainNode.gain.linearRampToValueAtTime(parseFloat(sweep.volume), audioContext.currentTime + sweep.start + sweep.adsr);
-
   gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + sweep.start + sweep.end - (sweep.end - sweep.adsr)*.7);
+
   stereo.pan.value = sweep.pan;
 
   osc.connect(gainNode).connect(biquadFilter).connect(stereo).connect(audioContext.destination);

@@ -2,9 +2,12 @@ import { SET_VOLUME, PAUSE_ORCHESTRA, CHOOSE_PROGRESSION, SET_CHANGE_TYPE } from
 import { ControlState } from "../models";
 
 const initialState: ControlState = {
-  volume: ".2",
+  volume: ".4",
   pause: false,
-  progression: 0,
+  progression: {
+    label: "IV-I-V-vi in A Major",
+    index: 0,
+  },
   changeType: "ndChanges"
 };
 
