@@ -108,20 +108,42 @@ export const noteFreq:Octaves = {
   }
 }
 
+export function playChord(note: number, time: number) {
+  let osc: OscillatorNode = audioContext.createOscillator();
+  let gainNode: GainNode = audioContext.createGain();
+  let biquadFilter: BiquadFilterNode = audioContext.createBiquadFilter();
+
+  biquadFilter.type = "bandpass";
+  biquadFilter.Q.value=9;
+  biquadFilter.frequency.setValueAtTime(190, audioContext.currentTime);
+  
+  osc.frequency.value = note;
+   
+  gainNode.gain.cancelScheduledValues(audioContext.currentTime);
+  gainNode.gain.setValueAtTime(0, audioContext.currentTime+time);
+  gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime+time);
+  gainNode.gain.linearRampToValueAtTime(.3, audioContext.currentTime+ time + 2);
+
+  osc.connect(gainNode).connect(biquadFilter).connect(audioContext.destination);
+
+  osc.start(audioContext.currentTime+time);
+  osc.stop(audioContext.currentTime +time+ 2);
+}
+
 export function playSweep(sweep: {volume: string; freq: number; start: number; adsr: number; end: any; pan: number; }) {
   let osc: OscillatorNode = audioContext.createOscillator();
   let gainNode: GainNode = audioContext.createGain();
   let stereo: StereoPannerNode = audioContext.createStereoPanner();
   let biquadFilter: BiquadFilterNode = audioContext.createBiquadFilter();
 
-  if (sweep.freq > 150 && sweep.freq < 500) {
-    let cut = (176-Math.abs(sweep.freq - 325))*.0007
+  if (sweep.freq < 600) {
+    let cut = (426-Math.abs(sweep.freq - 175))*.0007
     sweep.volume = (parseFloat(sweep.volume) - cut).toString();
   }
 
   biquadFilter.type = "bandpass";
-  biquadFilter.Q.value=2;
-  biquadFilter.frequency.setValueAtTime(72, audioContext.currentTime);
+  biquadFilter.Q.value=9;
+  biquadFilter.frequency.setValueAtTime(190, audioContext.currentTime);
   
   osc.frequency.value = sweep.freq;
   osc.detune.value = rndmRng(14,-14);

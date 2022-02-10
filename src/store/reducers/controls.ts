@@ -2,7 +2,7 @@ import { SET_VOLUME, PAUSE_ORCHESTRA, CHOOSE_PROGRESSION, SET_CHANGE_TYPE } from
 import { ControlState } from "../models";
 
 const initialState: ControlState = {
-  volume: ".4",
+  volume: ".5",
   pause: false,
   progression: {
     label: "IV-I-V-vi in A Major",
@@ -26,7 +26,7 @@ const controlsReducer = (
       return { ...state, progression: action.payload };
     }
     case SET_CHANGE_TYPE: {
-      return { ...state, chagneType: action.payload };
+      return { ...state, changeType: action.payload };
     }
     default: {
       return state;

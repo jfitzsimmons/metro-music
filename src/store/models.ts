@@ -12,6 +12,11 @@ export interface Progression {
   index: number;
 }
 
+export interface Routes {
+  updatedRoutes: Entity[] | null;
+  retiredVehicles: Entity[] | null;
+}
+
 export interface scoreState {
   scoreIsVisible: boolean;
   sweepTime: number;
