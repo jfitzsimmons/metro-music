@@ -1,10 +1,9 @@
-import { LatLngExpression } from "leaflet";
-
 export interface ControlState {
   volume: string;
   pause: boolean;
   progression: Progression;
   changeType: string;
+  freshRender: boolean;
 }
 
 export interface Progression {
@@ -13,8 +12,8 @@ export interface Progression {
 }
 
 export interface Routes {
-  updatedRoutes: Entity[] | null;
-  retiredVehicles: Entity[] | null;
+  updatedRoutes: Bus[] | null;
+  retiredVehicles: Bus[] | null;
 }
 
 export interface scoreState {
@@ -29,58 +28,29 @@ export interface TextCue {
   class?: string
 }
 
-export interface PlaceState {
-  places: Entity[];
-  pastPlaces: Entity[];
-  selectedPlace: Entity | null;
+export interface IBusState {
+  busses: Bus[];
+  selectedBus: Bus | null;
   placePreviewsIsVisible: boolean;
-  placeFormIsVisible: boolean;
-  prePlacePosition: LatLngExpression;
-  initial: boolean;
 }
+
+export type BusState  = IBusState;
 
 export interface IState {
   score: scoreState;
-  places: PlaceState;
+  busses: BusState;
   controls: ControlState;
 }
 
-export interface Place {
-  picture?: string;
-  title?: string;
-  description?: string;
-  seeMoreLink?: string;
-  position: LatLngExpression;
-}
-
-export interface Entity {
-  id: string;
-  vehicle: Vehicle;
-  movement?: Movement;
-}
-
-export interface Movement {
-  distance?: number;
-  mph?: number;
-  timing?: number;
-}
-
-export interface Vehicle {
-  position: {
+export interface Bus {
+    id: string;
     latitude: number;
     longitude: number;
-  };
-  timestamp: string;
-  trip: {
-    routeId: string;
-    startDate: string;
-    startTime: string;
-    tripId: string;
-  };
-  vehicle: {
-    id: string;
+    timestamp: string;
     label: string;
-  }
+    distance?: number;
+    mph?: number;
+    timing?: number;
 }
 
 export interface Octaves {
