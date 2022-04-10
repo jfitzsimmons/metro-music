@@ -15,21 +15,19 @@ const Header = ({
   pause, 
   pauseOrchestra,
   visible,
-  addToText }: any) => {
+  addToText,
+  setChangeType }: any) => {
 
-  /** 
-  function radioHandler(event:ChangeEvent<HTMLInputElement>) {
-    if(event.target){
-      const value  = event.target.value.toString();
-      setChangeType(value);
-    }
+  
+  function abortScore() {
+    setChangeType("dChanges");
+    //console.log('abort')
   }
-  */
- 
+
   const delayText = debounce(() => {
     addToText({
       id: `volume${Date.now()}`,
-      text: `Volume will be set to ${Math.round((parseFloat(volume)/.8)*100)}% with the next batch of data.`,
+      text: `Volume will be set to ${Math.round((parseFloat(volume))*100)}% with the next batch of data.`,
       class: `controls-change`,
     });
 }, 500);
@@ -96,40 +94,22 @@ const Header = ({
         </button>
         
         <div className="volume">
-          <div className="volume__display" style={{background: `hsla(209, ${Math.round((volume/.8)*100)}%, 20%, 1)`}}>
-            {Math.round((volume/.8)*100)}%
+          <div className="volume__display" style={{background: `hsla(209, ${Math.round((volume)*100)}%, 20%, .7)`}}>
+            {Math.round((volume)*100)}%
             <br />
             volume
           </div>
-          <input type="range" min="0.0" max="0.8" step="0.025"
+          <input type="range" min="0.0" max="1.0" step="0.025"
             value={volume} list="volumes" name="volume" onChange={(e) => handleVolume(e)} onMouseUp={delayText} />
           <datalist id="volumes">
             <option value="0.0" label="Mute" />
-            <option value="0.8" label="100%" />
+            <option value="1.0" label="100%" />
           </datalist>
         </div>
         <div className="flex-1">
-          {/**
-        <fieldset>
-        <input
-            type="radio"
-            name="controlChanges"
-            value="dChanges"
-            id="ndChanges"
-            onChange={radioHandler}
-            defaultChecked
-          />
-          <label htmlFor="ndChanges">non-disruptive changes</label>
-          <input
-            type="radio"
-            name="controlChanges"
-            value="dChanges"
-            id="dChanges"
-            onChange={radioHandler}
-          />
-          <label htmlFor="dChanges">disruptive changes</label>
-          </fieldset>
-           */}
+        <button  onMouseUp={abortScore}>
+          abort
+        </button>
         </div>
         <div className="select-div song">
         <label>Song: </label>

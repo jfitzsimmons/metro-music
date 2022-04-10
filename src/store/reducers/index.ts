@@ -1,6 +1,6 @@
 import { combineReducers } from "redux";
-import places from "./places";
+import busses from "./busses";
 import score from "./score";
 import controls from "./controls";
 
-export default combineReducers({ places, score, controls });
+export default combineReducers({ busses, score, controls });

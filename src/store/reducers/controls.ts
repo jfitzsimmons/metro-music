@@ -1,14 +1,15 @@
-import { SET_VOLUME, PAUSE_ORCHESTRA, CHOOSE_PROGRESSION, SET_CHANGE_TYPE } from "../actions";
+import { SET_VOLUME, PAUSE_ORCHESTRA, CHOOSE_PROGRESSION, SET_CHANGE_TYPE, SET_FRESH_RENDER } from "../actions";
 import { ControlState } from "../models";
 
 const initialState: ControlState = {
-  volume: ".4",
+  volume: ".5",
   pause: false,
   progression: {
     label: "IV-I-V-vi in A Major",
     index: 0,
   },
-  changeType: "ndChanges"
+  changeType: "ndChanges",
+  freshRender: true,
 };
 
 const controlsReducer = (
@@ -26,7 +27,10 @@ const controlsReducer = (
       return { ...state, progression: action.payload };
     }
     case SET_CHANGE_TYPE: {
-      return { ...state, chagneType: action.payload };
+      return { ...state, changeType: action.payload };
+    }
+    case SET_FRESH_RENDER: {
+      return { ...state, freshRender: action.payload };
     }
     default: {
       return state;

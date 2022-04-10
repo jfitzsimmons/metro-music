@@ -52,14 +52,20 @@
 }
 
 .controls-change {
-  background: #B0B0B0;
+  background: #B0B0B0d8;
   color: #000;
   text-align: center;
 }
 
 .newdata {
-  background: rgba(164, 14, 26, 1);
+  background: rgba(164, 14, 26, .9);
   color: #fffd;
+  text-align: center;
+}
+
+.retired {
+  background: #fffa;
+  color: rgba(164, 14, 26, 1);
   text-align: center;
 }
 
