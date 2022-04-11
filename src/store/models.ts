@@ -34,7 +34,7 @@ export interface IBusState {
   placePreviewsIsVisible: boolean;
 }
 
-export type BusState  = IBusState;
+export type BusState = IBusState;
 
 export interface IState {
   score: scoreState;
@@ -43,14 +43,14 @@ export interface IState {
 }
 
 export interface Bus {
-    id: string;
-    latitude: number;
-    longitude: number;
-    timestamp: string;
-    label: string;
-    distance?: number;
-    mph?: number;
-    timing?: number;
+  id: string;
+  latitude: number;
+  longitude: number;
+  timestamp: string;
+  label: string;
+  distance?: number;
+  mph?: number;
+  timing?: number;
 }
 
 export interface Octaves {
@@ -71,7 +71,7 @@ export interface Scale {
   "F": number,
   "F#": number,
   "G": number,
-  "G#":number,
+  "G#": number,
   "A": number,
   "A#": number,
   "B": number,
