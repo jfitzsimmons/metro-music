@@ -11,13 +11,14 @@ import { usePrevious } from "../../utils/tools";
 import { useLazyEffect } from "../../utils/useLazyEffect";
 import "./Map.css";
 import store from "../../store";
-import { useStore } from "../../store/store";
+import { useBussesStore } from "../../store/store";
 
 let newVehicles: Bus[] = []
 let retiredVehicles: Bus[] = []
 let markerRefs: React.RefObject<L.Marker>[] = [];
 let longAvg = -90.28392791748047
-let progress = 0, multiple = 0, chord = 0, start = 0, concertStart = 0, concertStart2 = 0;
+let progress = 0, multiple = 0, chord = 0, start = 0, concertStart2 = 0;
+let concertStart = Math.round(Date.now() / 1000);
 
 const cleanBusData = (entities: any) => {
   const cleaned: Bus[] = [];
@@ -153,10 +154,13 @@ const Map = ({
   const defaultPosition: LatLngExpression = [38.65727, -90.29789];
   const prevPause = usePrevious(pause);
   const prevFreshRender = usePrevious(freshRender);
-  const { busses, addBus, patchBus } = useStore();
+  const { addBus, patchBus } = useBussesStore();
+  const busses = useBussesStore(useCallback((state) => state.busses, []));
+  const bussesRef = useRef(useBussesStore.getState().busses)
+
 
   //const { busses, addBus, patchBus } = useStore();
-  const prevBusses = usePrevious(busses);
+  const prevBusses = usePrevious(bussesRef.current);
 
   const shapeWaves = useCallback((routes: Bus[]) => {
     if (routes.length === 0 || !routes) {
@@ -252,9 +256,89 @@ const Map = ({
     return timeout;
   }, [addToText, progression, volume]);
 
+  const shapeWave = useCallback((curr: Bus, prev: Bus, minTime: number) => {
+
+    curr.distance = distance(prev.latitude, prev.longitude, curr.latitude, curr.longitude);
+    curr.timing = parseInt(curr.timestamp) - parseInt(prev.timestamp);
+    curr.mph = (distance(prev.latitude, prev.longitude, curr.latitude, curr.longitude) / (parseInt(curr.timestamp) - parseInt(prev.timestamp))) * 3600;
+
+    //if (concertStart === 0) concertStart = minTime;
+    console.log("TESTJPFFUCK 0 !!");
+    // console.log(`SHAPE WAVES ROTES LOOP r.timestamp: ${r.timestamp}`)
+    progress = parseInt(curr.timestamp) - minTime;
+
+    console.log(`progress: ${progress} | minTime: ${minTime}`);
+    multiple = Math.floor(progress / 8)
+    //console.log("TESTJPFFUCK 2! !");
+    chord = (progress >= 8) ? Math.floor((progress - 8 * multiple) / 2) : Math.floor(progress / 2);
+    // console.log("TESTJPFFUCK  3! !");
+    type OctaveKey = keyof typeof noteFreq;
+    // console.log("TESTJPFFUCK  4! !");
+    let octave: OctaveKey = pickFrequency(curr.latitude);
+    let noteChar = noteFreq[octave];
+    type NoteKey = keyof typeof noteChar;
+    // console.log("TESTJPFFUCK  5! !");
+    // console.log(`notesKey[${progression.index}][${chord}]`);
+    let note: NoteKey = notesKey[progression.index][chord][Math.round(rndmRng(3, 0))];
+    // console.log("keys stuff music!!");
+
+
+    start = parseInt(curr.timestamp) - minTime;
+
+
+    let end: number = 0;
+    let adsr: number = 0;
+    if (curr && curr.distance) end = (curr.distance < .05) ? .05 : curr.distance;
+    end *= 10;
+    if (end > 4) end = 4;
+    if (curr && curr.mph) adsr = getAdsr(curr.mph);
+
+    if (curr.latitude > 38.66) longAvg = -90.3517098;
+    let pan = ((Math.abs(longAvg) - Math.abs(curr.longitude)) * 6) * (octave * .15);
+
+    let sweep = {
+      volume,
+      start,
+      end,
+      freq: noteFreq[octave][note],
+      pan,
+      adsr: adsr * end,
+    }
+    // console.log("premarkerS!!");
+
+    const found = findMarker(curr.id)
+    setTimeout(function () {
+      if (found && found.current) {
+        found.current.setIcon(
+          L.divIcon({
+            iconSize: [40, 40],
+            iconAnchor: [10, 10],
+            popupAnchor: [10, 0],
+            shadowSize: [0, 0],
+            className: `map-icon icon-animation map-icon_${curr.id}`
+          })
+        );
+        addToText({
+          id: `${curr.id}${start}${end}${Date.now()}`,
+          text: `${curr.label} ~ is playing ${note}${octave} for ${(end * 2).toFixed(3)} beats`,
+          class: `vehicle`,
+        });
+      }
+    }, start * 1000)
+    playSweep(sweep);
+    // console.log('shape wave END')
+
+    //let timeout: number = (parseInt(routes[routes.length - 1].timestamp) - minTime) * 1000;
+    //return timeout;
+  }, [addToText, progression, volume]);
+
 
   const loadNewData = useCallback((timer) => {
     const crudBusData = (entities: any) => {
+      let minTime = parseInt(entities.sort(function (x: any, y: any) {
+        return parseInt(x.vehicle.timestamp) - parseInt(y.vehicle.timestamp);
+      })[0].vehicle.timestamp);
+      // console.log(`init mintime: !!! : ${minTime}`);
       entities.forEach((e: any) => {
         const normalized = {
           id: e.vehicle.vehicle.id,
@@ -265,7 +349,21 @@ const Map = ({
         }
         let bus = busses.find((el: Bus) => el.id === e.vehicle.vehicle.id);
         if (!bus) addBus(normalized);
-        if (bus && bus.timestamp !== e.vehicle.timestamp) patchBus(normalized);
+        if (bus && bus.timestamp !== e.vehicle.timestamp) {
+          patchBus(normalized);
+          //need to add movements
+
+          shapeWave(normalized, bus, minTime);
+          /**
+           * 
+           * Test JPF
+           * calculate wave right here?!?!?
+           * Most likely?!?!?!?
+           * 
+           */
+          //playWave()
+        }
+
       });
     }
 
@@ -276,40 +374,40 @@ const Map = ({
           const response = fetch('/.netlify/functions/metro-updates').then((res) => res.json())
           try {
             const entities = await response;
-            // console.log('entities')
-            console.dir(entities[0])
+            // console.log('1st entity')
+            //// console.dir(entities[0])
             crudBusData(entities)
             // WORKS!!!TESTJPF
-            // console.log(busEntities)
+            // // console.log(busEntities)
             markerRefs.length = 0;
             //setNewBusMarkers(busEntities);
-            //    setFreshRender(false);
+            setFreshRender(false);
           } catch (err) {
             addToText({
               id: `loading${Date.now()}`,
               text: `Call failed.  Trying again.  loading...`,
               class: `loading`,
             });
-            loadNewData(94000);
+            loadNewData(994000);
           }
         })();
       }, timer)
     } else {
-      //  setFreshRender(true);
+      setFreshRender(true);
       //setNewBusMarkers([]);
     }
-  }, [addBus, addToText, busses, patchBus]);
+  }, [addBus, addToText, busses, patchBus, setFreshRender, shapeWave]);
 
 
 
   useLazyEffect(() => {
 
-    loadNewData(1);
-    /** 
-    console.log(`NEW BUSSES:`);
-    console.dir(busses);
+    //loadNewData(1);
+
+    // console.log(`NEW BUSSES:`);
+    // console.dir(bussesRef.current);
     if (!pause && busses && busses.length <= 1 && freshRender) {
-      console.log(`initial one`)
+      // console.log(`initial one`)
       loadNewData(1);
       addToText({
         id: `beginshortly${Date.now()}`,
@@ -317,33 +415,43 @@ const Map = ({
         class: `loading`,
       });
       setFreshRender(false);
+      bussesRef.current = busses;
     }
-        if (prevBusses && prevBusses.length > 0 && !pause && busses !== prevBusses && !prevFreshRender) {
-          // console.log(`regular load`);
-          // console.log(`busses`)
-          // console.log(busses)
-          // console.log(`prevBusses`)
-          // console.log(prevBusses)
-    
-          let routes = organizeVehicles(busses, prevBusses, progression.index);
-          loadNewData(shapeWaves(routes));
-        }
-    
-        if (changeType === "dChanges" || (pause && prevPause)) {
-          if (timeout && timeout.current) clearTimeout(timeout.current);
-          resetAudioContext();
-          setChangeType("ndChanges")
-        }
-    
-        if (!pause && prevPause) {
-          //// console.log(`after being paused`)
-          let timeElapsed: number = (Math.floor(Date.now() / 1000) - parseInt(busses[0].timestamp));
-          (timeElapsed > 50) ? loadNewData(false) : loadNewData(4000);
-        }
-        //// console.log(`prevInitial: ${prevInitial} | initial: ${initial}`)
-        if (prevFreshRender) loadNewData(7000);
-        */
-  }, [loadNewData]);//[addToText, pause, loadNewData, busses, prevBusses, shapeWaves, changeType, prevPause, setChangeType, freshRender, prevFreshRender, progression.index, setFreshRender]);
+
+    // console.log(`busses`)
+    // console.log(busses)
+    // console.log(`bussesRef.current`)
+    // console.log(bussesRef.current)
+    // console.log(`prevBusses`)
+    // console.log(prevBusses)
+
+    if (busses && busses.length > 1) {
+      // console.log(`regular load`);
+      // console.log(`busses`)
+      // console.log(busses)
+      // console.log(`prevBusses`)
+      // console.log(prevBusses)
+
+      //let routes = organizeVehicles(busses, prevBusses, progression.index);
+      loadNewData(11000);
+    }
+    /**
+
+   if (changeType === "dChanges" || (pause && prevPause)) {
+     if (timeout && timeout.current) clearTimeout(timeout.current);
+     resetAudioContext();
+     setChangeType("ndChanges")
+   }
+
+   if (!pause && prevPause) {
+     //// console.log(`after being paused`)
+     let timeElapsed: number = (Math.floor(Date.now() / 1000) - parseInt(busses[0].timestamp));
+     (timeElapsed > 50) ? loadNewData(false) : loadNewData(4000);
+   }
+   //// console.log(`prevInitial: ${prevInitial} | initial: ${initial}`)
+   if (prevFreshRender) loadNewData(7000);
+*/
+  }, [addToText, pause, loadNewData, busses, bussesRef.current, prevBusses, shapeWaves, changeType, prevPause, setChangeType, freshRender, prevFreshRender, progression.index, setFreshRender]);//[addToText, pause, loadNewData, busses, prevBusses, shapeWaves, changeType, prevPause, setChangeType, freshRender, prevFreshRender, progression.index, setFreshRender]);
 
   const showPreview = (place: Bus) => {
     if (isVisible) {

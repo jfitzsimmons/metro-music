@@ -22,7 +22,7 @@ type MetroState = {
     patchBus: Function;
 };
 
-export const useStore = create<MetroState>((set) => ({
+export const useBussesStore = create<MetroState>((set) => ({
     busses: [
         {
             id: '-1',
