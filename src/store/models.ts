@@ -43,6 +43,7 @@ export interface IState {
 }
 
 export interface Bus {
+  dupes: number;
   id: string;
   latitude: number;
   longitude: number;

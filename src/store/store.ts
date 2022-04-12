@@ -20,6 +20,7 @@ type MetroState = {
     busses: Array<Bus>;
     addBus: Function;
     patchBus: Function;
+    movement: Number;
 };
 
 export const useBussesStore = create<MetroState>((set) => ({
@@ -29,9 +30,11 @@ export const useBussesStore = create<MetroState>((set) => ({
             latitude: 38.627003,
             longitude: -90.199402,
             timestamp: '1649680408',
-            label: "Welcome to our performance"
+            label: "Welcome to our performance",
+            dupes: 1
         },
     ],
+    movement: 0,
     addBus: (payload: Bus) =>
         set(
             produce((draft) => {
@@ -49,7 +52,8 @@ export const useBussesStore = create<MetroState>((set) => ({
         set(
             produce((draft) => {
                 let bus = draft.busses.find((el: Bus) => el.id === payload.id);
-                bus = payload;
+                bus.latitude = payload.latitude;
+                bus.longitude = payload.longitude;
             })
         ),
 }));

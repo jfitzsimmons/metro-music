@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useRef, createRef, memo } from "react";
+import { useEffect, useCallback, useRef, createRef, memo, useState } from "react";
 import { connect } from "react-redux";
 import L, { LatLngExpression } from "leaflet";
 import { MapContainer, TileLayer, Marker, Tooltip } from "react-leaflet";
@@ -19,7 +19,8 @@ let markerRefs: React.RefObject<L.Marker>[] = [];
 let longAvg = -90.28392791748047
 let progress = 0, multiple = 0, chord = 0, start = 0, concertStart2 = 0;
 let concertStart = Math.round(Date.now() / 1000);
-
+let concertStart3 = 99999999999;
+/**
 const cleanBusData = (entities: any) => {
   const cleaned: Bus[] = [];
   entities.forEach((e: any) => {
@@ -33,7 +34,7 @@ const cleanBusData = (entities: any) => {
   });
   return cleaned;
 }
-
+ */
 
 
 const findMarker = (id: string) => markerRefs.find((m) => (m.current && m && m.current.options && m.current.options.icon && m.current.options.icon.options && m.current.options.icon.options.className &&
@@ -44,10 +45,8 @@ const organizeVehicles = (busses: Bus[], pastBusses: Bus[], progression: number)
 
   for (let i = 0; i < pastBusses.length; i++) {
     if (!busses[i2]) {
-      // console.log(`!busses[i2]`)
       return [];
     } else {
-      //// console.log(`i2: ${i2} | id: ${busses[i2].id}`)
     }
     if (pastBusses[i].id !== busses[i2].id) {
       if (busses.some((b: Bus) => b.id === pastBusses[i].id)) {
@@ -67,12 +66,6 @@ const organizeVehicles = (busses: Bus[], pastBusses: Bus[], progression: number)
 
   }
 
-  //// console.log(`retiredVehicles: ${retiredVehicles.length}`);
-  //// console.log(retiredVehicles);
-
-  //// console.log(`busses: ${busses.length}`);
-  // // console.table(busses);
-
   if (retiredVehicles && retiredVehicles.length > 0) {
     let minTime = parseInt(retiredVehicles.sort(function (x: Bus, y: Bus) {
       return parseInt(x.timestamp) - parseInt(y.timestamp);
@@ -83,7 +76,6 @@ const organizeVehicles = (busses: Bus[], pastBusses: Bus[], progression: number)
     let progress2 = Math.round(Date.now() / 1000) - concertStart;
     let delay2 = (progress2 < 7) ? 7 - progress2 : 8 - (progress2 % 8 + 1)
 
-    //// console.log(`concertStart2: ${concertStart2} | minTime: ${minTime}`)
 
     retiredVehicles.forEach((v, i) => {
       const found = findMarker(v.id)
@@ -98,7 +90,6 @@ const organizeVehicles = (busses: Bus[], pastBusses: Bus[], progression: number)
       }
       setTimeout(function () {
         if (found && found.current) {
-          //// console.log(`!!! GOT ONE!!!!`);
 
           found.current.setIcon(
             L.divIcon({
@@ -121,15 +112,11 @@ const organizeVehicles = (busses: Bus[], pastBusses: Bus[], progression: number)
     }, delay2 * 1000);
   }
 
-  //// console.log(`newVehicles: ${newVehicles.length}`);
-  //// console.log(newVehicles);
+
 
   let updatedRoutes = busses.filter((vehicle: Bus) => (vehicle && vehicle.distance !== 0)).sort(function (x: Bus, y: Bus) {
     return parseInt(x.timestamp) - parseInt(y.timestamp);
   });
-
-  //// console.log(`newVehicles: ${newVehicles.length}`);
-  //// console.log(newVehicles);
 
   return updatedRoutes;
 }
@@ -156,7 +143,8 @@ const Map = ({
   const prevFreshRender = usePrevious(freshRender);
   const { addBus, patchBus } = useBussesStore();
   const busses = useBussesStore(useCallback((state) => state.busses, []));
-  const bussesRef = useRef(useBussesStore.getState().busses)
+  const bussesRef = useRef(useBussesStore.getState().busses);
+  const [movement, setMovement] = useState(1);
 
 
   //const { busses, addBus, patchBus } = useStore();
@@ -188,9 +176,7 @@ const Map = ({
     let count = 1;
 
     if (concertStart === 0) concertStart = minTime;
-    // console.log(routes);
     routes.forEach((r: Bus, i: number) => {
-      // console.log(`SHAPE WAVES ROTES LOOP r.timestamp: ${r.timestamp}`)
       progress = parseInt(r.timestamp) - concertStart;
       multiple = Math.floor(progress / 8)
       chord = (progress >= 8) ? Math.floor((progress - 8 * multiple) / 2) : Math.floor(progress / 2);
@@ -199,7 +185,6 @@ const Map = ({
       let octave: OctaveKey = pickFrequency(r.latitude);
       let noteChar = noteFreq[octave];
       type NoteKey = keyof typeof noteChar;
-      // console.log(`notesKey[${progression.index}][${chord}]`);
       let note: NoteKey = notesKey[progression.index][chord][Math.round(rndmRng(3, 0))];
 
       if (routes[i - 1] && r.timestamp === routes[i - 1].timestamp) {
@@ -263,11 +248,10 @@ const Map = ({
     curr.mph = (distance(prev.latitude, prev.longitude, curr.latitude, curr.longitude) / (parseInt(curr.timestamp) - parseInt(prev.timestamp))) * 3600;
 
     //if (concertStart === 0) concertStart = minTime;
-    console.log("TESTJPFFUCK 0 !!");
     // console.log(`SHAPE WAVES ROTES LOOP r.timestamp: ${r.timestamp}`)
     progress = parseInt(curr.timestamp) - minTime;
 
-    console.log(`progress: ${progress} | minTime: ${minTime}`);
+    //console.log(`progress: ${progress} | minTime: ${minTime}`);
     multiple = Math.floor(progress / 8)
     //console.log("TESTJPFFUCK 2! !");
     chord = (progress >= 8) ? Math.floor((progress - 8 * multiple) / 2) : Math.floor(progress / 2);
@@ -283,7 +267,8 @@ const Map = ({
     // console.log("keys stuff music!!");
 
 
-    start = parseInt(curr.timestamp) - minTime;
+    start = parseInt(curr.timestamp) - minTime + curr.dupes;
+    //console.log(`start (parseInt(curr.timestamp) - minTime;): ${start}`);
 
 
     let end: number = 0;
@@ -304,10 +289,16 @@ const Map = ({
       pan,
       adsr: adsr * end,
     }
-    // console.log("premarkerS!!");
+
+
 
     const found = findMarker(curr.id)
     setTimeout(function () {
+      addToText({
+        id: `${curr.id}${start}${end}${Date.now()}`,
+        text: `${curr.label} ~ is playing ${note}${octave} for ${(end * 2).toFixed(3)} beats`,
+        class: `vehicle`,
+      });
       if (found && found.current) {
         found.current.setIcon(
           L.divIcon({
@@ -318,42 +309,61 @@ const Map = ({
             className: `map-icon icon-animation map-icon_${curr.id}`
           })
         );
-        addToText({
-          id: `${curr.id}${start}${end}${Date.now()}`,
-          text: `${curr.label} ~ is playing ${note}${octave} for ${(end * 2).toFixed(3)} beats`,
-          class: `vehicle`,
-        });
-      }
+      } else { console.log('notfound') }
     }, start * 1000)
     playSweep(sweep);
-    // console.log('shape wave END')
 
-    //let timeout: number = (parseInt(routes[routes.length - 1].timestamp) - minTime) * 1000;
-    //return timeout;
   }, [addToText, progression, volume]);
 
 
   const loadNewData = useCallback((timer) => {
+
+    let tempMovement = 0
+    let start = 0;
     const crudBusData = (entities: any) => {
-      let minTime = parseInt(entities.sort(function (x: any, y: any) {
+
+      entities.sort(function (x: any, y: any) {
         return parseInt(x.vehicle.timestamp) - parseInt(y.vehicle.timestamp);
-      })[0].vehicle.timestamp);
+      });
+
+
+      let timestampDupes: any = {}
+      timestampDupes = countBy(entities, (r: { vehicle: { timestamp: any; } }) => r.vehicle.timestamp);
+      let count = 0
+      //TEST JPF NEW STATE EX:
+      //updateNextCall(entities[entites.length-1].vehicle.timestamp);
+      // (or most likely amount of secons from concertStart3?!?!?!)
       // console.log(`init mintime: !!! : ${minTime}`);
-      entities.forEach((e: any) => {
+      entities.forEach((e: any, i: number) => {
+        let dupes = timestampDupes[e.vehicle.timestamp];
+
+
+        if (entities[i - 1] && e.vehicle.timestamp === entities[i - 1].vehicle.timestamp) {
+          start = (1 / dupes * count)
+          count++;
+        } else {
+          start = 0;
+          count = 0;
+        }
+
+        // console.log(`load START ${start} | dupes : ${dupes}`)
         const normalized = {
           id: e.vehicle.vehicle.id,
           latitude: e.vehicle.position.latitude,
           longitude: e.vehicle.position.longitude,
           timestamp: e.vehicle.timestamp,
-          label: e.vehicle.vehicle.label
+          label: e.vehicle.vehicle.label,
+          dupes: start,
         }
         let bus = busses.find((el: Bus) => el.id === e.vehicle.vehicle.id);
         if (!bus) addBus(normalized);
         if (bus && bus.timestamp !== e.vehicle.timestamp) {
+          if (e.vehicle.timestamp < concertStart3) concertStart3 = e.vehicle.timestamp
+          if (e.vehicle.timestamp > tempMovement) tempMovement = e.vehicle.timestamp
           patchBus(normalized);
           //need to add movements
 
-          shapeWave(normalized, bus, minTime);
+          shapeWave(normalized, bus, concertStart3);
           /**
            * 
            * Test JPF
@@ -365,6 +375,8 @@ const Map = ({
         }
 
       });
+      tempMovement = tempMovement - concertStart3;
+      (tempMovement > 1) ? setMovement(tempMovement) : setMovement(11);
     }
 
     if (timer) {
@@ -374,12 +386,12 @@ const Map = ({
           const response = fetch('/.netlify/functions/metro-updates').then((res) => res.json())
           try {
             const entities = await response;
-            // console.log('1st entity')
+            console.log('1st entity')
             //// console.dir(entities[0])
             crudBusData(entities)
             // WORKS!!!TESTJPF
             // // console.log(busEntities)
-            markerRefs.length = 0;
+            //markerRefs.length = 0;
             //setNewBusMarkers(busEntities);
             setFreshRender(false);
           } catch (err) {
@@ -401,57 +413,65 @@ const Map = ({
 
 
   useLazyEffect(() => {
-
-    //loadNewData(1);
-
-    // console.log(`NEW BUSSES:`);
-    // console.dir(bussesRef.current);
-    if (!pause && busses && busses.length <= 1 && freshRender) {
-      // console.log(`initial one`)
-      loadNewData(1);
-      addToText({
-        id: `beginshortly${Date.now()}`,
-        text: `loading... The piece will begin shortly. loading...`,
-        class: `loading`,
-      });
-      setFreshRender(false);
-      bussesRef.current = busses;
-    }
-
-    // console.log(`busses`)
-    // console.log(busses)
-    // console.log(`bussesRef.current`)
-    // console.log(bussesRef.current)
-    // console.log(`prevBusses`)
-    // console.log(prevBusses)
-
-    if (busses && busses.length > 1) {
-      // console.log(`regular load`);
-      // console.log(`busses`)
-      // console.log(busses)
-      // console.log(`prevBusses`)
-      // console.log(prevBusses)
-
-      //let routes = organizeVehicles(busses, prevBusses, progression.index);
-      loadNewData(11000);
-    }
+    loadNewData(movement * 1000);
     /**
-
-   if (changeType === "dChanges" || (pause && prevPause)) {
-     if (timeout && timeout.current) clearTimeout(timeout.current);
-     resetAudioContext();
-     setChangeType("ndChanges")
-   }
-
-   if (!pause && prevPause) {
-     //// console.log(`after being paused`)
-     let timeElapsed: number = (Math.floor(Date.now() / 1000) - parseInt(busses[0].timestamp));
-     (timeElapsed > 50) ? loadNewData(false) : loadNewData(4000);
-   }
-   //// console.log(`prevInitial: ${prevInitial} | initial: ${initial}`)
-   if (prevFreshRender) loadNewData(7000);
-*/
-  }, [addToText, pause, loadNewData, busses, bussesRef.current, prevBusses, shapeWaves, changeType, prevPause, setChangeType, freshRender, prevFreshRender, progression.index, setFreshRender]);//[addToText, pause, loadNewData, busses, prevBusses, shapeWaves, changeType, prevPause, setChangeType, freshRender, prevFreshRender, progression.index, setFreshRender]);
+     * 
+     * have a state var that hods the last timestamp
+     * 
+     * 
+     */
+    /** 
+        //loadNewData(1);
+    
+        // console.log(`NEW BUSSES:`);
+        // console.dir(bussesRef.current);
+        if (!pause && busses && busses.length <= 1 && freshRender) {
+          console.log(`initial one  busses.length: ${busses.length}`)
+          loadNewData(1);
+          addToText({
+            id: `beginshortly${Date.now()}`,
+            text: `loading... The piece will begin shortly. loading...`,
+            class: `loading`,
+          });
+          setFreshRender(false);
+          bussesRef.current = busses;
+        }
+    
+        // console.log(`busses`)
+        // console.log(busses)
+        // console.log(`bussesRef.current`)
+        // console.log(bussesRef.current)
+        // console.log(`prevBusses`)
+        // console.log(prevBusses)
+    
+        if (busses && busses.length > 1 && !freshRender) {
+          console.log(`regular load  busses.length: ${busses.length}`)
+          // console.log(`busses`)
+          // console.log(busses)
+          // console.log(`prevBusses`)
+          // console.log(prevBusses)
+    
+          //let routes = organizeVehicles(busses, prevBusses, progression.index);
+          loadNewData(11000);
+          // setFreshRender(true);
+        }
+    
+    
+        if (changeType === "dChanges" || (pause && prevPause)) {
+          if (timeout && timeout.current) clearTimeout(timeout.current);
+          resetAudioContext();
+          setChangeType("ndChanges")
+        }
+    
+        if (!pause && prevPause) {
+          //// console.log(`after being paused`)
+          let timeElapsed: number = (Math.floor(Date.now() / 1000) - parseInt(busses[0].timestamp));
+          (timeElapsed > 50) ? loadNewData(false) : loadNewData(4000);
+        }
+        //// console.log(`prevInitial: ${prevInitial} | initial: ${initial}`)
+        if (prevFreshRender) loadNewData(7000);
+    */
+  }, [movement]) // [addToText, pause, loadNewData, busses, prevBusses, shapeWaves, changeType, prevPause, setChangeType, freshRender, prevFreshRender, progression.index, setFreshRender]);
 
   const showPreview = (place: Bus) => {
     if (isVisible) {
@@ -500,6 +520,7 @@ const Map = ({
 
   return (
     <div className="map__container">
+      {console.log('MAP RETURN')}
       <MapContainer
         center={defaultPosition}
         zoom={11}
