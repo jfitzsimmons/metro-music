@@ -1,6 +1,8 @@
 # Music performed by St. Louis Metro Bus Drivers
 
 Coded with React, Redux, Web Audio API, Leaflet + OpenStreetMap, gtfs-realtime-bindings
+
+[![Metro Music Preview Image](http://i.imgur.com/Ot5DWAW.png)](https://youtu.be/mdkzGyr0djg "St. Louis Metro Bus Drivers perform a IV-I-V-vi progression in A Major")
   
 > **What?**  
 > Using real-time data provided by [Metro St. Louis Developer Resources](https://www.metrostlouis.org/developer-resources/) music is created using the current movement of St. Louis's fleet of busses.
