@@ -317,7 +317,7 @@ const Map = ({
 
 
   const loadNewData = useCallback((timer) => {
-
+    console.time();
     let tempMovement = 0
     let start = 0;
     const crudBusData = (entities: any) => {
@@ -376,7 +376,8 @@ const Map = ({
 
       });
       tempMovement = tempMovement - concertStart3;
-      (tempMovement > 1) ? setMovement(tempMovement) : setMovement(11);
+      (tempMovement > 1) ? setMovement(tempMovement - 3) : setMovement(8);
+      console.timeEnd();
     }
 
     if (timer) {
@@ -390,7 +391,7 @@ const Map = ({
             //// console.dir(entities[0])
             crudBusData(entities)
             // WORKS!!!TESTJPF
-            // // console.log(busEntities)
+            console.log('after CRUD LOADEWDATA')
             //markerRefs.length = 0;
             //setNewBusMarkers(busEntities);
             setFreshRender(false);

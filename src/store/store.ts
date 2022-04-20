@@ -16,6 +16,7 @@ import { Bus } from "./models";
 
 import { Immutable, produce } from "immer"
 
+
 type MetroState = {
     busses: Array<Bus>;
     addBus: Function;
@@ -57,3 +58,15 @@ export const useBussesStore = create<MetroState>((set) => ({
             })
         ),
 }));
+/** TESTJPF */
+/**
+ need to pass array i bet.  handle cleaning logic in store?!?!?
+//update by id
+
+const updatedTodosArray = produce(todosArray, draft => {
+    const index = draft.findIndex(todo => todo.id === "id1")
+    if (index !== -1) draft[index].done = true
+})
+
+
+ */
