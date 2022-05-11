@@ -335,6 +335,8 @@ const Map = ({
       // (or most likely amount of secons from concertStart3?!?!?!)
       // console.log(`init mintime: !!! : ${minTime}`);
       entities.forEach((e: any, i: number) => {
+        (async () => {
+
         let dupes = timestampDupes[e.vehicle.timestamp];
 
 
@@ -373,11 +375,13 @@ const Map = ({
            */
           //playWave()
         }
-
+      })()
       });
       tempMovement = tempMovement - concertStart3;
       (tempMovement > 1) ? setMovement(tempMovement - 3) : setMovement(8);
       console.timeEnd();
+      
+      
     }
 
     if (timer) {
