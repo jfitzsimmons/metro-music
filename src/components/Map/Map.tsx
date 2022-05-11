@@ -396,6 +396,7 @@ const Map = ({
             //setNewBusMarkers(busEntities);
             setFreshRender(false);
           } catch (err) {
+            console.log(err)
             addToText({
               id: `loading${Date.now()}`,
               text: `Call failed.  Trying again.  loading...`,
