@@ -316,7 +316,7 @@ const Map = ({
   }, [addToText, progression, volume]);
 
 
-  const loadNewData = useCallback((timer) => {
+  const loadNewData = useCallback((timer: number) => {
     console.time();
     let tempMovement = 0
     let start = 0;
@@ -526,7 +526,6 @@ const Map = ({
 
   return (
     <div className="map__container">
-      {console.log('MAP RETURN')}
       <MapContainer
         center={defaultPosition}
         zoom={11}
