@@ -244,12 +244,12 @@ const Map = ({
     return timeout;
   },[addToText, progression, volume]);
 
-  const loadNewData = useCallback((timer) => {
+  const loadNewData = useCallback((timer:any) => {
     if (timer) {
       timeout.current =  setTimeout(function(){
         if (timeout.current) clearTimeout(timeout.current);
         (async function() {
-          const response = fetch('/.netlify/functions/metro-updates').then((res) => res.json())
+          const response = fetch('').then((res) => res.json())
           try {
             const entities = await response;
             // console.log('entities')
