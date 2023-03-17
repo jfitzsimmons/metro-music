@@ -7,7 +7,7 @@ import {
   setSelectedBus,
   setAllBusses,
   setNewText,
-  setChangeType,
+  setSignalType,
   setFreshRender,
 } from '../../store/actions'
 import { IState, Bus, TextCue } from '../../store/models'
@@ -23,6 +23,8 @@ import { getAdsr, pickFrequency, pickOctave } from '../../utils/waveShaping'
 import { usePrevious } from '../../utils/tools'
 import './Map.css'
 import store from '../../store'
+//import GtfsRealtimeBindings from 'gtfs-realtime-bindings'
+import fetch from 'node-fetch'
 
 let newVehicles: Bus[] = []
 let retiredVehicles: Bus[] = []
@@ -58,13 +60,13 @@ const findMarker = (id: string) =>
       m.current.options.icon &&
       m.current.options.icon.options &&
       m.current.options.icon.options.className &&
-      m.current.options.icon.options.className.includes(`map-icon_${id}`)
+      m.current.options.icon.options.className.includes(`map-icon_${id}`),
   )
 
 const organizeVehicles = (
   busses: Bus[],
   pastBusses: Bus[],
-  progression: number
+  progression: number,
 ) => {
   let i2 = 0
 
@@ -85,10 +87,10 @@ const organizeVehicles = (
       }
     } else {
       busses[i2].distance = distance(
-        pastBusses[i].latitude,
+        pastBusses[i].latitude++,
         pastBusses[i].longitude,
         busses[i2].latitude,
-        busses[i2].longitude
+        busses[i2].longitude,
       )
       busses[i2].timing =
         parseInt(busses[i2].timestamp) - parseInt(pastBusses[i].timestamp)
@@ -97,7 +99,7 @@ const organizeVehicles = (
           pastBusses[i].latitude,
           pastBusses[i].longitude,
           busses[i2].latitude,
-          busses[i2].longitude
+          busses[i2].longitude,
         ) /
           (parseInt(busses[i2].timestamp) -
             parseInt(pastBusses[i].timestamp))) *
@@ -117,7 +119,7 @@ const organizeVehicles = (
     let minTime = parseInt(
       retiredVehicles.sort(function (x: Bus, y: Bus) {
         return parseInt(x.timestamp) - parseInt(y.timestamp)
-      })[0].timestamp
+      })[0].timestamp,
     )
 
     if (concertStart2 === 0) concertStart2 = minTime
@@ -149,7 +151,7 @@ const organizeVehicles = (
               popupAnchor: [10, 0],
               shadowSize: [0, 0],
               className: `map-icon icon-animation2 map-icon_${v.id}`,
-            })
+            }),
           )
         }
       }, delay2 * 1000)
@@ -160,7 +162,7 @@ const organizeVehicles = (
           id: `retired${Date.now()}`,
           text: `${retiredVehicles.length} busses are without updates`,
           class: `retired`,
-        })
+        }),
       )
     }, delay2 * 1000)
   }
@@ -193,14 +195,15 @@ const Map = ({
   volume,
   pause,
   progression,
-  changeType,
-  setChangeType,
+  signalType,
+  setSignalType,
 }: any) => {
   const timeout: { current: NodeJS.Timeout | null } = useRef(null)
   const defaultPosition: LatLngExpression = [38.65727, -90.29789]
   const prevBusses = usePrevious(busses)
   const prevPause = usePrevious(pause)
   const prevFreshRender = usePrevious(freshRender)
+  const firstRenderRef = useRef(false)
 
   const shapeWaves = useCallback(
     (routes: Bus[]) => {
@@ -222,13 +225,13 @@ const Map = ({
       let timestampDupes: any = {}
       timestampDupes = countBy(
         routes,
-        (r: { timestamp: number }) => r.timestamp
+        (r: { timestamp: number }) => r.timestamp,
       )
 
       let minTime = parseInt(
         routes.sort(function (x: Bus, y: Bus) {
           return parseInt(x.timestamp) - parseInt(y.timestamp)
-        })[0].timestamp
+        })[0].timestamp,
       )
 
       let count = 1
@@ -294,7 +297,7 @@ const Map = ({
                 popupAnchor: [10, 0],
                 shadowSize: [0, 0],
                 className: `map-icon icon-animation map-icon_${r.id}`,
-              })
+              }),
             )
             addToText({
               id: `${r.id}${i}${start}${end}${Date.now()}`,
@@ -312,23 +315,53 @@ const Map = ({
         (parseInt(routes[routes.length - 1].timestamp) - minTime) * 1000
       return timeout
     },
-    [addToText, progression, volume]
+    [addToText, progression, volume],
   )
+
+  //first jsut get the old netlify way going
+  //testjpf if process.env is dev, use netlify
+  //if prod use client
+  /**
+   * 
+   * 
+   * if (!process.env.NODE_ENV || process.env.NODE_ENV === 'development') {
+    // dev code
+} else {
+    // production code
+}
+   */
+
+  /**
+   *
+   * need to create a util that returns processed entities for
+   * const busEntities = cleanBusData(entities)
+   *
+   */
 
   const loadNewData = useCallback(
     (timer: any) => {
       if (timer) {
         timeout.current = setTimeout(function () {
           if (timeout.current) clearTimeout(timeout.current)
+          console.log('before fetch new datat')
+
+          const apiEndpoint =
+            process.env.REACT_APP_ENVIRONMENT === 'dev'
+              ? '/.netlify/functions/metro-updates'
+              : 'https://www.metrostlouis.org/RealTimeData/StlRealTimeVehicles.pb'
           ;(async function () {
-            const response = fetch('').then((res) => res.json())
+            const response = fetch(apiEndpoint).then((res) => res.json())
             try {
               const entities = await response
+
+              //if (process.env.REACT_APP_ENVIRONMENT === "prod" )
               // console.log('entities')
               // console.dir(entities[0])
               const busEntities = cleanBusData(entities)
               // console.log(busEntities)
               markerRefs.length = 0
+
+              //testjpf return await Busentities???
               setNewBusMarkers(busEntities)
               setFreshRender(false)
             } catch (err) {
@@ -337,7 +370,7 @@ const Map = ({
                 text: `Call failed.  Trying again.  loading...`,
                 class: `loading`,
               })
-              loadNewData(94000)
+              loadNewData(3000)
             }
           })()
         }, timer)
@@ -346,12 +379,39 @@ const Map = ({
         setNewBusMarkers([])
       }
     },
-    [addToText, setFreshRender, setNewBusMarkers]
+    [addToText, setFreshRender, setNewBusMarkers],
   )
 
+  const beginPiece = useCallback(() => {
+    console.log(`initial one`)
+    loadNewData(1)
+    addToText({
+      id: `beginshortly${Date.now()}`,
+      text: `loading... The piece will begin shortly. loading...`,
+      class: `loading`,
+    })
+
+    return () => {
+      console.log(`CLEANUP initial one`)
+    }
+  }, [addToText, loadNewData])
+
   useEffect(() => {
+    console.log(`UE for::: initial one`)
+    if (firstRenderRef.current) {
+      console.log(`UE for::: initial one AND firstRenderRef.current`)
+      beginPiece()
+    } else {
+      console.log(`UE for::: initial one AND firstRenderRef.ELSE ELSE ELSE`)
+
+      firstRenderRef.current = true
+    }
+  }, [beginPiece])
+
+  useEffect(() => {
+    /** 
     if (!pause && busses && busses.length <= 0 && freshRender) {
-      //// console.log(`initial one`)
+      console.log(`initial one`)
       loadNewData(1)
       addToText({
         id: `beginshortly${Date.now()}`,
@@ -360,7 +420,9 @@ const Map = ({
       })
       setFreshRender(false)
     }
-
+*/
+    console.log(`top of plain old UE`)
+    console.log(`busses.length: ${busses.length}`)
     if (
       prevBusses &&
       prevBusses.length > 0 &&
@@ -368,7 +430,7 @@ const Map = ({
       busses !== prevBusses &&
       !prevFreshRender
     ) {
-      // console.log(`regular load`);
+      console.log(`regular load`)
       // console.log(`busses`)
       // console.log(busses)
       // console.log(`prevBusses`)
@@ -378,30 +440,32 @@ const Map = ({
       loadNewData(shapeWaves(routes))
     }
 
-    if (changeType === 'dChanges' || (pause && prevPause)) {
+    if (signalType === 'stop' || (pause && prevPause)) {
       if (timeout && timeout.current) clearTimeout(timeout.current)
       resetAudioContext()
-      setChangeType('ndChanges')
+      setSignalType('interrupt')
     }
 
     if (!pause && prevPause) {
-      //// console.log(`after being paused`)
+      console.log(`after being paused`)
       let timeElapsed: number =
         Math.floor(Date.now() / 1000) - parseInt(busses[0].timestamp)
       timeElapsed > 50 ? loadNewData(false) : loadNewData(4000)
     }
     //// console.log(`prevInitial: ${prevInitial} | initial: ${initial}`)
-    if (prevFreshRender) loadNewData(7000)
+    if (prevFreshRender) {
+      console.log('if prev fresh render exist load new data 7 seconds later')
+      loadNewData(7000)
+    }
   }, [
-    addToText,
     pause,
     loadNewData,
     busses,
     prevBusses,
     shapeWaves,
-    changeType,
+    signalType,
     prevPause,
-    setChangeType,
+    setSignalType,
     freshRender,
     prevFreshRender,
     progression.index,
@@ -429,7 +493,12 @@ const Map = ({
   function renderItems() {
     return (
       busses &&
-      busses.map((place: Bus) => <Post key={place.id} place={place} />)
+      busses.map((place: Bus) => (
+        <Post
+          key={place.id}
+          place={place}
+        />
+      ))
     )
   }
 
@@ -486,7 +555,7 @@ const mapStateToProps = (state: IState) => {
     volume: controls.volume,
     pause: controls.pause,
     progression: controls.progression,
-    changeType: controls.changeType,
+    signalType: controls.signalType,
     freshRender: controls.freshRender,
   }
 }
@@ -498,7 +567,7 @@ const mapDispatchToProps = (dispatch: any) => {
     setBusForPreview: (payload: Bus) => dispatch(setSelectedBus(payload)),
     setNewBusMarkers: (payload: Bus[]) => dispatch(setAllBusses(payload)),
     addToText: (payload: TextCue) => dispatch(setNewText(payload)),
-    setChangeType: (payload: string) => dispatch(setChangeType(payload)),
+    setSignalType: (payload: string) => dispatch(setSignalType(payload)),
     setFreshRender: (payload: boolean) => dispatch(setFreshRender(payload)),
   }
 }
