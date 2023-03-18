@@ -352,7 +352,8 @@ const Map = ({
             const response = chooseEnvEndpoint()
             try {
               const busEntities =
-                process.env.REACT_APP_ENVIRONMENT === 'dev'
+                process.env.REACT_APP_ENVIRONMENT === 'dev' ||
+                process.env.REACT_APP_ENVIRONMENT === 'prod'
                   ? cleanBusData(await response)
                   : cleanBusData(
                       JSON.parse(

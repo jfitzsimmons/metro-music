@@ -29,8 +29,8 @@ const loadNewData = useCallback(
 export const chooseEnvEndpoint = (): any =>
   process.env.REACT_APP_ENVIRONMENT === 'dev'
     ? fetch('/.netlify/functions/metro-updates').then((res) => res.json())
-    : node_fetch(
-        'https://www.metrostlouis.org/RealTimeData/StlRealTimeVehicles.pb',
+    : fetch('https://stl-metro-api.vercel.app/busses/').then((res) =>
+        res.json(),
       )
 
 export const serverSideCall = (): Bus[] | void => {
