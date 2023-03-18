@@ -2,6 +2,7 @@ import React, { useEffect, useCallback, useRef, createRef, memo } from 'react'
 import { connect } from 'react-redux'
 import L, { LatLngExpression } from 'leaflet'
 import { MapContainer, TileLayer, Marker, Tooltip } from 'react-leaflet'
+import GtfsRealtimeBindings from 'gtfs-realtime-bindings'
 import {
   setBusPreviewVisibility,
   setSelectedBus,
@@ -21,6 +22,7 @@ import {
 import { countBy, distance, rndmRng } from '../../utils/calculations'
 import { getAdsr, pickFrequency, pickOctave } from '../../utils/waveShaping'
 import { usePrevious } from '../../utils/tools'
+import { chooseEnvEndpoint } from '../../utils/api'
 import './Map.css'
 import store from '../../store'
 //import GtfsRealtimeBindings from 'gtfs-realtime-bindings'
@@ -345,19 +347,31 @@ const Map = ({
           if (timeout.current) clearTimeout(timeout.current)
           console.log('before fetch new datat')
 
-          const apiEndpoint =
-            process.env.REACT_APP_ENVIRONMENT === 'dev'
-              ? '/.netlify/functions/metro-updates'
-              : 'https://www.metrostlouis.org/RealTimeData/StlRealTimeVehicles.pb'
+          //  const apiEndpoint = chooseEnvEndpoint()
           ;(async function () {
-            const response = fetch(apiEndpoint).then((res) => res.json())
+            const response = chooseEnvEndpoint()
             try {
-              const entities = await response
+              const busEntities =
+                process.env.REACT_APP_ENVIRONMENT === 'dev'
+                  ? cleanBusData(await response)
+                  : cleanBusData(
+                      JSON.parse(
+                        JSON.stringify(
+                          GtfsRealtimeBindings.transit_realtime.FeedMessage.decode(
+                            new Uint8Array(await response.arrayBuffer()),
+                          ).entity,
+                        ),
+                      ),
+                    )
+
+              //const cleanedData =
+
+              //const entities = await response
 
               //if (process.env.REACT_APP_ENVIRONMENT === "prod" )
               // console.log('entities')
               // console.dir(entities[0])
-              const busEntities = cleanBusData(entities)
+
               // console.log(busEntities)
               markerRefs.length = 0
 
@@ -390,12 +404,9 @@ const Map = ({
       text: `loading... The piece will begin shortly. loading...`,
       class: `loading`,
     })
-
-    return () => {
-      console.log(`CLEANUP initial one`)
-    }
   }, [addToText, loadNewData])
 
+  // if first render, get initail bus locations
   useEffect(() => {
     console.log(`UE for::: initial one`)
     if (firstRenderRef.current) {
@@ -403,7 +414,6 @@ const Map = ({
       beginPiece()
     } else {
       console.log(`UE for::: initial one AND firstRenderRef.ELSE ELSE ELSE`)
-
       firstRenderRef.current = true
     }
   }, [beginPiece])
