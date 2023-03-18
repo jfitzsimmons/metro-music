@@ -205,7 +205,7 @@ const Map = ({
   const prevBusses = usePrevious(busses)
   const prevPause = usePrevious(pause)
   const prevFreshRender = usePrevious(freshRender)
-  const firstRenderRef = useRef(false)
+  //const firstRenderRef = useRef(false)
 
   const shapeWaves = useCallback(
     (routes: Bus[]) => {
