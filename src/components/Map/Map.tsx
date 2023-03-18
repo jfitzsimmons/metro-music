@@ -352,7 +352,9 @@ const Map = ({
             const response = await chooseEnvEndpoint()
             try {
               let busEntities: Bus[] = []
-              if (process.env.REACT_APP_ENVIRONMENT === 'dev') {
+              if (process.env.REACT_APP_ENVIRONMENT !== 'dev') {
+                console.log("process.env.REACT_APP_ENVIRONMENT ======== 'dev'")
+
                 busEntities = cleanBusData(await response)
               } else {
                 console.log("process.env.REACT_APP_ENVIRONMENT !!!!=== 'dev'")
