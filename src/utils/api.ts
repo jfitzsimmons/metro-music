@@ -27,7 +27,7 @@ const loadNewData = useCallback(
 */
 
 export const chooseEnvEndpoint = (): any =>
-  process.env.REACT_APP_ENVIRONMENT === 'dev'
+  process.env.REACT_APP_ENVIRONMENT === 'prod'
     ? fetch('/.netlify/functions/metro-updates').then((res) => res.json())
     : node_fetch(
         'https://www.metrostlouis.org/RealTimeData/StlRealTimeVehicles.pb',
