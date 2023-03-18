@@ -351,18 +351,21 @@ const Map = ({
           ;(async function () {
             const response = chooseEnvEndpoint()
             try {
-              const busEntities =
-                process.env.REACT_APP_ENVIRONMENT === 'dev'
-                  ? cleanBusData(await response)
-                  : cleanBusData(
-                      JSON.parse(
-                        JSON.stringify(
-                          GtfsRealtimeBindings.transit_realtime.FeedMessage.decode(
-                            new Uint8Array(await response.arrayBuffer()),
-                          ).entity,
-                        ),
-                      ),
-                    )
+              let busEntities: Bus[] = []
+              if (process.env.REACT_APP_ENVIRONMENT === 'dev') {
+                busEntities = cleanBusData(await response)
+              } else {
+                busEntities = cleanBusData(
+                  JSON.parse(
+                    JSON.stringify(
+                      GtfsRealtimeBindings.transit_realtime.FeedMessage.decode(
+                        new Uint8Array(await response.arrayBuffer()),
+                      ).entity,
+                    ),
+                  ),
+                )
+                console.log(busEntities)
+              }
 
               //const cleanedData =
 
