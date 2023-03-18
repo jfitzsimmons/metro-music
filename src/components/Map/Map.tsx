@@ -354,7 +354,7 @@ const Map = ({
               let busEntities: Bus[] = []
               console.log('process.env.REACT_APP_ENVIRONMENT')
               console.log(process.env.REACT_APP_ENVIRONMENT)
-              if (process.env.REACT_APP_ENVIRONMENT === 'dev') {
+              if (process.env.REACT_APP_ENVIRONMENT === 'prod') {
                 console.log("process.env.REACT_APP_ENVIRONMENT ======== 'dev'")
 
                 busEntities = cleanBusData(await response)
