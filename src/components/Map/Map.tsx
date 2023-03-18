@@ -26,7 +26,7 @@ import { chooseEnvEndpoint } from '../../utils/api'
 import './Map.css'
 import store from '../../store'
 //import GtfsRealtimeBindings from 'gtfs-realtime-bindings'
-import fetch from 'node-fetch'
+//import fetch from 'node-fetch'
 
 let newVehicles: Bus[] = []
 let retiredVehicles: Bus[] = []
