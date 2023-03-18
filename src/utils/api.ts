@@ -1,7 +1,7 @@
 // import { useCallback, useRef } from 'react'
 import { Bus } from '../store/models'
 
-import node_fetch from 'node-fetch'
+//import node_fetch from 'node-fetch'
 
 const cleanBusData = (entities: any) => {
   const cleaned: Bus[] = []
