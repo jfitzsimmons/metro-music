@@ -1,3 +1,4 @@
+import React from "react"
 import { connect } from "react-redux";
 import { setBusPreviewVisibility } from "../../store/actions";
 import { IState } from "../../store/models";
