@@ -354,7 +354,7 @@ const Map = ({
               let busEntities: Bus[] = []
               console.log('process.env.REACT_APP_ENVIRONMENT')
               console.log(process.env.REACT_APP_ENVIRONMENT)
-              if (process.env.REACT_APP_ENVIRONMENT !== 'dev') {
+              if (process.env.REACT_APP_ENVIRONMENT === 'dev') {
                 console.log("process.env.REACT_APP_ENVIRONMENT ======== 'dev'")
 
                 busEntities = cleanBusData(await response)
@@ -420,13 +420,11 @@ const Map = ({
   // if first render, get initail bus locations
   useEffect(() => {
     console.log(`UE for::: initial one`)
-    if (firstRenderRef.current) {
-      console.log(`UE for::: initial one AND firstRenderRef.current`)
-      beginPiece()
-    } else {
-      console.log(`UE for::: initial one AND firstRenderRef.ELSE ELSE ELSE`)
-      firstRenderRef.current = true
-    }
+    console.log(`UE for::: initial one AND firstRenderRef.current`)
+    beginPiece()
+
+    console.log(`UE for::: initial one AND firstRenderRef.ELSE ELSE ELSE`)
+    firstRenderRef.current = true
   }, [beginPiece])
 
   useEffect(() => {
