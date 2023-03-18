@@ -355,15 +355,18 @@ const Map = ({
               if (process.env.REACT_APP_ENVIRONMENT === 'dev') {
                 busEntities = cleanBusData(await response)
               } else {
+                const buffer = await response.arrayBuffer()
+                const feed =
+                  GtfsRealtimeBindings.transit_realtime.FeedMessage.decode(
+                    new Uint8Array(buffer),
+                  )
+                console.log('JSON.stringify(feed.entity)::: ')
+                console.dir(JSON.stringify(feed.entity))
+
                 busEntities = cleanBusData(
-                  JSON.parse(
-                    JSON.stringify(
-                      GtfsRealtimeBindings.transit_realtime.FeedMessage.decode(
-                        new Uint8Array(await response.arrayBuffer()),
-                      ).entity,
-                    ),
-                  ),
+                  JSON.parse(JSON.stringify(feed.entity)),
                 )
+
                 console.log(busEntities)
               }
 
