@@ -349,12 +349,13 @@ const Map = ({
 
           //  const apiEndpoint = chooseEnvEndpoint()
           ;(async function () {
-            const response = chooseEnvEndpoint()
+            const response = await chooseEnvEndpoint()
             try {
               let busEntities: Bus[] = []
               if (process.env.REACT_APP_ENVIRONMENT === 'dev') {
                 busEntities = cleanBusData(await response)
               } else {
+                console.log("process.env.REACT_APP_ENVIRONMENT !!!!=== 'dev'")
                 const buffer = await response.arrayBuffer()
                 const feed =
                   GtfsRealtimeBindings.transit_realtime.FeedMessage.decode(
