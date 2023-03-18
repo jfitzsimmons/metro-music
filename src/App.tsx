@@ -8,7 +8,6 @@ import './App.css'
 function App() {
   return (
     <main>
-      <>{console.log('App Return testjpf')}</>
       <Score />
       <Controls />
       <Map />

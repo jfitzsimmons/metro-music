@@ -1,29 +1,18 @@
-//import { Handler } from '@netlify/functions'
-
-////const req = require("request-promise");
 const GtfsRealtimeBindings = require('gtfs-realtime-bindings')
-//const requestSettings = {
-// method: 'GET',
-// url: 'https://www.metrostlouis.org/RealTimeData/StlRealTimeVehicles.pb',
-////  encoding: null,
-//};
-
+const cors = require('cors')
 const node_fetch = require('node-fetch')
 const express = require('express')
-//const path = require('path')
 const bodyParser = require('body-parser')
-//const fetch = require('node-fetch')
 
 const API_ENDPOINT =
   'https://www.metrostlouis.org/RealTimeData/StlRealTimeVehicles.pb'
 
 const app = express()
-//const port = process.env.PORT || 5000
-
 app.use(bodyParser.json())
 app.use(bodyParser.urlencoded({ extended: true }))
+app.use(cors({ origin: /nifty-heyrovsky-603fd4\.netlify\.app$/ }))
 app.get('/', (req, res) => {
-  res.send('Hey this is my API running 🥳')
+  res.send('Welcome 🥳')
 })
 
 app.get('/busses/', async (req, res) => {
@@ -47,7 +36,6 @@ app.get('/busses/', async (req, res) => {
       statusCode: 200,
       body: JSON.stringify(feed.entity),
     }
-    //return JSON.stringify(feed.entity);
   } catch (error) {
     console.log(error)
     return {
@@ -58,11 +46,7 @@ app.get('/busses/', async (req, res) => {
 })
 ;(async function () {})()
 
-//const app = express()
-//const port = process.env.PORT || 5000
-//
-
-var port = 8080
+const port = 8080
 app.listen(port, () => {
   console.log('server up at http://localhost:8080/')
 })

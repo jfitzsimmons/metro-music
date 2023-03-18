@@ -398,7 +398,7 @@ const Map = ({
   )
 
   const beginPiece = useCallback(() => {
-    console.log(`initial one`)
+    // console.log(`initial one`)
     loadNewData(1)
     addToText({
       id: `beginshortly${Date.now()}`,
@@ -409,7 +409,7 @@ const Map = ({
 
   // if first render, get initail bus locations
   useEffect(() => {
-    console.log(`UE for::: initial one`)
+    //console.log(`UE for::: initial one`)
     beginPiece()
   }, [beginPiece])
 
@@ -426,8 +426,8 @@ const Map = ({
       setFreshRender(false)
     }
 */
-    console.log(`top of plain old UE`)
-    console.log(`busses.length: ${busses.length}`)
+    //console.log(`top of plain old UE`)
+    //console.log(`busses.length: ${busses.length}`)
     if (
       prevBusses &&
       prevBusses.length > 0 &&
@@ -435,7 +435,7 @@ const Map = ({
       busses !== prevBusses &&
       !prevFreshRender
     ) {
-      console.log(`regular load`)
+      // console.log(`regular load`)
       // console.log(`busses`)
       // console.log(busses)
       // console.log(`prevBusses`)
@@ -452,14 +452,14 @@ const Map = ({
     }
 
     if (!pause && prevPause) {
-      console.log(`after being paused`)
+      //  console.log(`after being paused`)
       let timeElapsed: number =
         Math.floor(Date.now() / 1000) - parseInt(busses[0].timestamp)
       timeElapsed > 50 ? loadNewData(false) : loadNewData(4000)
     }
     //// console.log(`prevInitial: ${prevInitial} | initial: ${initial}`)
     if (prevFreshRender) {
-      console.log('if prev fresh render exist load new data 7 seconds later')
+      // console.log('if prev fresh render exist load new data 7 seconds later')
       loadNewData(7000)
     }
   }, [
