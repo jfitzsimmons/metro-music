@@ -409,13 +409,7 @@ const Map = ({
   // if first render, get initail bus locations
   useEffect(() => {
     console.log(`UE for::: initial one`)
-    if (firstRenderRef.current) {
-      console.log(`UE for::: initial one AND firstRenderRef.current`)
-      beginPiece()
-    } else {
-      console.log(`UE for::: initial one AND firstRenderRef.ELSE ELSE ELSE`)
-      firstRenderRef.current = true
-    }
+    beginPiece()
   }, [beginPiece])
 
   useEffect(() => {
