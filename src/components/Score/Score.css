@@ -1,8 +1,7 @@
 .score__container {
   width: 0%;
   height: 100vh;
-  backdrop-filter: blur(8px) saturate(280%) brightness(50%);
-  background-color: hsla(0, 0%, 16%, 0.7);
+  backdrop-filter: blur(4px) saturate(380%) brightness(50%);
   transition: width 0.5s ease-in-out;
   position: fixed;
   z-index: 1;
@@ -33,6 +32,18 @@
   font-size: calc(0.7rem + 0.2vw);
   color: #ccc;
   font-family: monospace;
+}
+
+.score__list__item {
+  background: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0) 1%,
+    rgba(0, 0, 0, 0.4) 20%,
+    rgba(0, 0, 0, 0.2) 80%,
+    rgba(0, 0, 0, 0) 99%
+  );
+  border-radius: 25px;
+  margin-right: 12px;
 }
 
 .score__list__item:hover {
@@ -69,11 +80,14 @@
 }
 
 .bus {
-  background: rgba(37, 51, 64, 0.7);
-  height: calc(0.7rem + 0.2vw);
+  background: linear-gradient(
+    90deg,
+    rgba(37, 51, 64, 0.6992997882746849) 1%,
+    rgb(53, 83, 112) 99%
+  );
   display: inline-block;
+  padding-left: calc(0.5vw);
   padding-right: calc(0.7rem + 0.2vw);
-  border-top-right-radius: 25px;
   border-bottom-right-radius: 25px;
   position: relative;
   color: rgba(242, 179, 4, 1);
