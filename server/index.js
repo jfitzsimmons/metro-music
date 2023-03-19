@@ -10,7 +10,14 @@ const API_ENDPOINT =
 const app = express()
 app.use(bodyParser.json())
 app.use(bodyParser.urlencoded({ extended: true }))
-app.use(cors({ origin: /nifty-heyrovsky-603fd4\.netlify\.app$/ }))
+app.use(
+  cors({
+    origin: [
+      /nifty-heyrovsky-603fd4\.netlify\.app$/,
+      /metrobusorchestra\.netlify\.app$/,
+    ],
+  }),
+)
 app.get('/', (req, res) => {
   res.send('Welcome 🥳')
 })
@@ -23,9 +30,7 @@ app.get('/busses/', async (req, res) => {
       const error = new Error(
         `${response.url}: ${response.status} ${response.statusText}`,
       )
-      //error.response = response;
       throw error
-      // process.exit(1);
     }
     const buffer = await response.arrayBuffer()
     const feed = GtfsRealtimeBindings.transit_realtime.FeedMessage.decode(
@@ -51,5 +56,4 @@ app.listen(port, () => {
   console.log('server up at http://localhost:8080/')
 })
 
-// Export the Express API
 module.exports = app
