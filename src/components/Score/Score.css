@@ -1,7 +1,7 @@
 .score__container {
   width: 0%;
   height: 100vh;
-  backdrop-filter: blur(8px) saturate(280%);
+  backdrop-filter: blur(8px) saturate(280%) brightness(50%);
   background-color: hsla(0, 0%, 16%, 0.7);
   transition: width 0.5s ease-in-out;
   position: fixed;
@@ -30,8 +30,8 @@
   overflow-y: scroll;
   height: 88vh;
   margin-bottom: 4rem;
-  font-size: calc(0.6rem + 0.2vw);
-  color: #b0b0b0;
+  font-size: calc(0.7rem + 0.2vw);
+  color: #ccc;
   font-family: monospace;
 }
 
