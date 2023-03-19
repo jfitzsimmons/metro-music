@@ -1,19 +1,23 @@
 .header__container {
-  padding: 1vmin;
+  backdrop-filter: blur(6px) saturate(150%);
+  box-shadow: 1px 2px 2px 0 #fff1;
+  border-bottom: 2px solid hsla(0, 0%, 0%, 0.4);
+  border-right: 1px solid hsla(0, 0%, 0%, 0.6);
+  border-radius: 0 0 4vmin 0;
+  box-sizing: border-box;
   color: #fffd;
   font-size: 1rem;
-  background: hsla(0, 0%, 16%, 0.7);
-  position: absolute;
-  z-index: 1;
-  left: 0;
   font-weight: bold;
-  box-sizing: border-box;
-  border-radius: 0 0 4vmin 0;
+  left: 0;
+  max-width: 900px;
   min-width: 250px;
+  padding: 1vmin;
+  position: absolute;
   transition: left 0.5s ease-in-out;
   width: -webkit-fill-available;
   width: fill-available;
   width: -moz-available;
+  z-index: 1;
 }
 
 .header__container--active {
@@ -50,7 +54,6 @@
 button {
   font-weight: bold;
   aspect-ratio: 1 / 1;
-  height: 11.5vmin;
   border: 0.3vmin solid rgba(242, 179, 4, 0.9);
   color: rgba(242, 179, 4, 0.9);
   text-align: center;
@@ -196,7 +199,6 @@ label {
 
 select {
   border-radius: 2vmin;
-  padding: 2vmin;
   outline: none;
   border: 0.3vmin solid rgba(242, 179, 4, 0.9);
   appearance: none;
@@ -204,8 +206,8 @@ select {
   width: 100%;
   color: rgba(242, 179, 4, 0.9);
   background-color: rgba(0, 53, 102, 0.7);
-  padding: 2vmin 8vmin 2vmin 2vmin;
-  font-size: 1.5rem;
+  padding: 1vmin 3vmin 1vmin 1vmin;
+  font-size: 1rem;
 }
 
 .select-div {
@@ -215,13 +217,12 @@ select {
 
 .select-div:after {
   content: '\276F';
+  -webkit-writing-mode: vertical-lr;
   writing-mode: vertical-lr;
   pointer-events: none;
   color: #a40e1a;
-  text-shadow: -1vmin 1vmin 0 rgba(242, 179, 4, 0.9),
-    1vmin 1vmin 0 rgba(242, 179, 4, 0.9), 1vmin -1vmin 0 rgba(242, 179, 4, 0.9),
-    -1vmin -1vmin 0 rgba(242, 179, 4, 0.9);
-  right: 3vmin;
+  font-size: 1.5rem;
+  right: 1vmin;
   position: absolute;
-  top: calc(2.7vmin + 2.2rem);
+  bottom: 1.5vmin;
 }

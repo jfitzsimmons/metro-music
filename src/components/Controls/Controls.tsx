@@ -144,10 +144,27 @@ const Controls = ({
           )}
         </button>
 
+        <button onMouseUp={() => setSignalType('stop')}>abort</button>
+
+        <div className="select-div song">
+          <label>Song: </label>
+          <select onChange={handleProgression}>
+            <option value={0}>IV-I-V-vi in A Major</option>
+            <option value={1}>I-IV-V in C Major</option>
+            <option value={2}>ii-V-I in C Minor</option>
+            <option value={3}>I-vi-IV-V in G Major</option>
+            <option value={4}>I-V-♭VII-IV in A Major</option>
+            <option value={5}>vi-iii-IV-ii in D Major</option>
+            <option value={6}>IV-V-iii in E♭ Major</option>
+            <option value={7}>IV-iii-VI in G♭ Major</option>
+            <option value={8}>i-♭VI-♭III-♭VII A Minor</option>
+            <option value={9}>i-♭VII-♭VI-V7 F# Minor</option>
+          </select>
+        </div>
         <div
           className="volume"
           style={{
-            background: `hsla(209, ${Math.round(volume * 100)}%, 20%, .7)`,
+            background: `hsla(209, ${Math.round(volume * 100)}%, 20%, .2)`,
           }}
         >
           <div>
@@ -175,24 +192,6 @@ const Controls = ({
               label="100%"
             />
           </datalist>
-        </div>
-        <div className="flex-1">
-          <button onMouseUp={() => setSignalType('stop')}>abort</button>
-        </div>
-        <div className="select-div song">
-          <label>Song: </label>
-          <select onChange={handleProgression}>
-            <option value={0}>IV-I-V-vi in A Major</option>
-            <option value={1}>I-IV-V in C Major</option>
-            <option value={2}>ii-V-I in C Minor</option>
-            <option value={3}>I-vi-IV-V in G Major</option>
-            <option value={4}>I-V-♭VII-IV in A Major</option>
-            <option value={5}>vi-iii-IV-ii in D Major</option>
-            <option value={6}>IV-V-iii in E♭ Major</option>
-            <option value={7}>IV-iii-VI in G♭ Major</option>
-            <option value={8}>i-♭VI-♭III-♭VII in A Minor</option>
-            <option value={9}>i-♭VII-♭VI-V7 in F# Minor</option>
-          </select>
         </div>
       </div>
 

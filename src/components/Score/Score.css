@@ -1,9 +1,12 @@
 .score__container {
-  width: 0%;
-  height: 100vh;
   backdrop-filter: blur(4px) saturate(380%) brightness(50%);
-  transition: width 0.5s ease-in-out;
+  border-right: 2px solid #fff3;
+  box-shadow: 2px 0 2px 0 #0004;
+  box-sizing: border-box;
+  height: 100vh;
   position: fixed;
+  transition: width 0.5s ease-in-out;
+  width: 0%;
   z-index: 1;
 }
 
