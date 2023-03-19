@@ -350,7 +350,6 @@ const Map = ({
       //soft reset
       let timeElapsed: number =
         Math.floor(Date.now() / 1000) - parseInt(busses[0].timestamp)
-      console.log('timeElapsed:', timeElapsed)
       timeElapsed > 50 ? loadNewData(null) : loadNewData(4000)
     }
   }, [
