@@ -14,6 +14,12 @@ import './Controls.css'
 import { GiMusicalScore } from 'react-icons/gi'
 import { BiArrowToLeft, BiArrowToRight } from 'react-icons/bi'
 import { debounce } from '../../utils/tools'
+import {
+  ImVolumeMedium,
+  ImVolumeLow,
+  ImVolumeHigh,
+  ImVolumeMute,
+} from 'react-icons/im'
 
 const Controls = ({
   setScoreVisibility,
@@ -59,6 +65,17 @@ const Controls = ({
     }
   }
 
+  function returnVolumeIcon(percent: number) {
+    if (percent < 80 && percent > 30) {
+      return <ImVolumeMedium />
+    } else if (percent >= 80) {
+      return <ImVolumeHigh />
+    } else if (percent === 0) {
+      return <ImVolumeMute />
+    }
+    return <ImVolumeLow />
+  }
+
   function handlePlayback() {
     pauseOrchestra(pause === true ? false : true)
     addToText({
@@ -78,34 +95,6 @@ const Controls = ({
         scoreIsVisible && 'active'
       }`}
     >
-      <div className="header__container__top">
-        <div className="score-toggle">
-          {scoreIsVisible ? (
-            <BiArrowToLeft
-              style={{
-                fontSize: '2vmin',
-              }}
-              onClick={() => setScoreVisibility(scoreIsVisible ? false : true)}
-            />
-          ) : (
-            <BiArrowToRight
-              style={{
-                fontSize: '2vmin',
-              }}
-              onClick={() => setScoreVisibility(scoreIsVisible ? false : true)}
-            />
-          )}
-          <GiMusicalScore
-            style={{
-              fontSize: '4vmin',
-            }}
-            onClick={() => setScoreVisibility(scoreIsVisible ? false : true)}
-          ></GiMusicalScore>
-        </div>
-
-        <h1>Concert performed by St. Louis Metro Bus Drivers</h1>
-      </div>
-
       <div className="controls">
         <button
           className={pause === true ? 'pause' : 'play'}
@@ -113,7 +102,6 @@ const Controls = ({
         >
           {pause === true ? (
             <>
-              <div>play</div>
               <svg
                 viewBox="0 0 24 24"
                 width="44"
@@ -129,7 +117,6 @@ const Controls = ({
             </>
           ) : (
             <>
-              <div>pause</div>
               <svg
                 viewBox="0 0 24 24"
                 width="44"
@@ -157,16 +144,32 @@ const Controls = ({
           )}
         </button>
 
-        <div className="volume">
-          <div
-            className="volume__display"
-            style={{
-              background: `hsla(209, ${Math.round(volume * 100)}%, 20%, .7)`,
-            }}
-          >
+        <button onMouseUp={() => setSignalType('stop')}>abort</button>
+
+        <div className="select-div song">
+          <label>Song: </label>
+          <select onChange={handleProgression}>
+            <option value={0}>IV-I-V-vi in A Major</option>
+            <option value={1}>I-IV-V in C Major</option>
+            <option value={2}>ii-V-I in C Minor</option>
+            <option value={3}>I-vi-IV-V in G Major</option>
+            <option value={4}>I-V-♭VII-IV in A Major</option>
+            <option value={5}>vi-iii-IV-ii in D Major</option>
+            <option value={6}>IV-V-iii in E♭ Major</option>
+            <option value={7}>IV-iii-VI in G♭ Major</option>
+            <option value={8}>i-♭VI-♭III-♭VII A Minor</option>
+            <option value={9}>i-♭VII-♭VI-V7 F# Minor</option>
+          </select>
+        </div>
+        <div
+          className="volume"
+          style={{
+            background: `hsla(209, ${Math.round(volume * 100)}%, 20%, .2)`,
+          }}
+        >
+          <div>
+            {returnVolumeIcon(Math.round(volume * 100))}
             {Math.round(volume * 100)}%
-            <br />
-            volume
           </div>
           <input
             type="range"
@@ -190,24 +193,34 @@ const Controls = ({
             />
           </datalist>
         </div>
-        <div className="flex-1">
-          <button onMouseUp={() => setSignalType('stop')}>abort</button>
+      </div>
+
+      <div className="header__container__top">
+        <div className="score-toggle">
+          {scoreIsVisible ? (
+            <BiArrowToLeft
+              style={{
+                fontSize: '2vmin',
+              }}
+              onClick={() => setScoreVisibility(scoreIsVisible ? false : true)}
+            />
+          ) : (
+            <BiArrowToRight
+              style={{
+                fontSize: '2vmin',
+              }}
+              onClick={() => setScoreVisibility(scoreIsVisible ? false : true)}
+            />
+          )}
+          <GiMusicalScore
+            style={{
+              fontSize: '4vmin',
+            }}
+            onClick={() => setScoreVisibility(scoreIsVisible ? false : true)}
+          ></GiMusicalScore>
         </div>
-        <div className="select-div song">
-          <label>Song: </label>
-          <select onChange={handleProgression}>
-            <option value={0}>IV-I-V-vi in A Major</option>
-            <option value={1}>I-IV-V in C Major</option>
-            <option value={2}>ii-V-I in C Minor</option>
-            <option value={3}>I-vi-IV-V in G Major</option>
-            <option value={4}>I-V-♭VII-IV in A Major</option>
-            <option value={5}>vi-iii-IV-ii in D Major</option>
-            <option value={6}>IV-V-iii in E♭ Major</option>
-            <option value={7}>IV-iii-VI in G♭ Major</option>
-            <option value={8}>i-♭VI-♭III-♭VII in A Minor</option>
-            <option value={9}>i-♭VII-♭VI-V7 in F# Minor</option>
-          </select>
-        </div>
+
+        <h1>Concert performed by St. Louis Metro Bus Drivers</h1>
       </div>
     </div>
   )

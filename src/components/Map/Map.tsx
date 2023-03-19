@@ -51,6 +51,7 @@ const cleanBusData = (entities: any) => {
 const findMarker = (id: string) =>
   markerRefs.find(
     (m) =>
+      m.current &&
       m.current.options &&
       m.current.options.icon.options.className.includes(`map-icon_${id}`),
   )
@@ -61,10 +62,8 @@ const organizeBusses = (
   progression: number,
 ) => {
   let i2 = 0
-
   for (let i = 0; i < pastBusses.length; i++) {
     if (!nextBusses[i2]) return []
-
     if (
       pastBusses[i].id === nextBusses[i2].id ||
       nextBusses.some((b: Bus) => b.id === pastBusses[i].id)
@@ -167,6 +166,25 @@ const Map = ({
   const prevPause = usePrevious(pause)
   const prevFreshRender = usePrevious(freshRender)
 
+  const countDown = useCallback(
+    (timer: number) => {
+      if (timer >= 1000) {
+        for (let i = timer; (i -= 1000); ) {
+          setTimeout(function () {
+            addToText({
+              id: `countdown${Date.now()}`,
+              text: `${i === 1000 ? 'updates in' : '...'} ${
+                (timer - i) / 1000
+              }`,
+              class: `loading`,
+            })
+          }, i)
+        }
+      }
+    },
+    [addToText],
+  )
+
   const makeMusicAndDance = useCallback(
     (routes: Bus[]) => {
       if (routes.length === 0 || !routes) {
@@ -175,6 +193,7 @@ const Map = ({
           text: `No new updates.  Trying again.  loading...`,
           class: `loading`,
         })
+        countDown(4000)
         return 4000
       }
 
@@ -239,6 +258,8 @@ const Map = ({
           (Math.abs(longAvg) - Math.abs(r.longitude)) * 6 * (octave * 0.15)
 
         const found = findMarker(r.id)
+        //testjpf need to track timeout and clear on abort!
+        //push to an array, etc...
         setTimeout(function () {
           if (found && found.current) {
             found.current.setIcon(
@@ -250,14 +271,14 @@ const Map = ({
                 className: `map-icon icon-animation map-icon_${r.id}`,
               }),
             )
-            addToText({
-              id: `${r.id}${i}${start}${end}${Date.now()}`,
-              text: `${r.label} ~ is playing ${note}${octave} for ${(
-                end * 2
-              ).toFixed(3)} beats`,
-              class: `vehicle`,
-            })
           }
+          addToText({
+            id: `${r.id}${i}${start}${end}${Date.now()}`,
+            text: `${r.label} ~ is playing ${note}${octave} for ${(
+              end * 2
+            ).toFixed(3)} beats`,
+            class: `vehicle`,
+          })
         }, start * 1000)
 
         let sweep = {
@@ -277,7 +298,7 @@ const Map = ({
         (parseInt(routes[routes.length - 1].timestamp) - batchStart) * 1000
       return timeout // when batch will be done
     },
-    [addToText, progression, volume],
+    [addToText, countDown, progression.index, volume],
   )
 
   const loadNewData = useCallback(
@@ -300,6 +321,7 @@ const Map = ({
                 class: `loading`,
               })
               loadNewData(3000)
+              countDown(3000)
             }
           })()
         }, timer)
@@ -308,7 +330,7 @@ const Map = ({
         setNewBusMarkers([])
       }
     },
-    [addToText, setFreshRender, setNewBusMarkers],
+    [addToText, countDown, setFreshRender, setNewBusMarkers],
   )
 
   const beginPiece = useCallback(() => {
@@ -339,6 +361,7 @@ const Map = ({
     } else if (prevFreshRender) {
       // 2nd data load to calculate movement
       loadNewData(7000)
+      countDown(7000)
     }
 
     if (signalType === 'stop' || (pause && prevPause)) {
@@ -365,6 +388,7 @@ const Map = ({
     prevFreshRender,
     progression.index,
     setFreshRender,
+    countDown,
   ])
 
   const showPreview = (place: Bus) => {
