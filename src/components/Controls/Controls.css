@@ -14,9 +14,7 @@
   padding: 1vmin;
   position: absolute;
   transition: left 0.5s ease-in-out;
-  width: -webkit-fill-available;
-  width: fill-available;
-  width: -moz-available;
+  width: stretch;
   z-index: 1;
 }
 
