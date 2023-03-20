@@ -103,15 +103,9 @@ const Controls = ({
       <div
         className={`score-toggle ${scoreIsVisible ? 'unflipped' : 'flipped'}`}
       >
-        {scoreIsVisible ? (
-          <BiArrowToLeft
-            onClick={() => setScoreVisibility(scoreIsVisible ? false : true)}
-          />
-        ) : (
-          <BiArrowToRight
-            onClick={() => setScoreVisibility(scoreIsVisible ? false : true)}
-          />
-        )}
+        <BiArrowToLeft
+          onClick={() => setScoreVisibility(scoreIsVisible ? false : true)}
+        />
         <GiMusicalScore
           onClick={() => setScoreVisibility(scoreIsVisible ? false : true)}
         ></GiMusicalScore>

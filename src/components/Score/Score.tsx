@@ -6,7 +6,7 @@ import './Score.css'
 import { memo, useEffect, useRef } from 'react'
 import { truncateAfter, truncateBefore, isInViewport } from '../../utils/tools'
 import { BiArrowBack } from 'react-icons/bi'
-
+import { BsMusicNoteBeamed } from 'react-icons/bs'
 const Line = memo(({ text, className }: any) => {
   return (
     <div className={`${className} score__list__item`}>
@@ -72,7 +72,7 @@ const Score = (props: {
           className="bottom-reference"
           ref={bottomRef as React.RefObject<HTMLDivElement>}
         >
-          &#119070;
+          <BsMusicNoteBeamed />
         </div>
       </div>
     </div>
