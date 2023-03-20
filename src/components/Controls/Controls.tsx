@@ -1,4 +1,3 @@
-//TESTJPF needs a style lift
 import React, { ChangeEvent } from 'react'
 import { connect } from 'react-redux'
 import {
@@ -20,7 +19,7 @@ import {
   ImVolumeHigh,
   ImVolumeMute,
 } from 'react-icons/im'
-import { BiArrowToLeft, BiArrowToRight } from 'react-icons/bi'
+import { BiArrowToLeft } from 'react-icons/bi'
 import { BsFillPlayFill, BsPauseFill, BsStopFill } from 'react-icons/bs'
 import { ReactComponent as MetroIcon } from '../../assets/svg/metro.svg'
 
