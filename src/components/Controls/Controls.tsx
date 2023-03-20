@@ -12,7 +12,7 @@ import {
 import { IState, Progression, TextCue } from '../../store/models'
 import './Controls.css'
 import { GiMusicalScore } from 'react-icons/gi'
-import { BiArrowToLeft, BiArrowToRight } from 'react-icons/bi'
+
 import { debounce } from '../../utils/tools'
 import {
   ImVolumeMedium,
@@ -20,6 +20,11 @@ import {
   ImVolumeHigh,
   ImVolumeMute,
 } from 'react-icons/im'
+import { BiArrowToLeft, BiArrowToRight } from 'react-icons/bi'
+import { BsFillPlayFill, BsPauseFill, BsStopFill } from 'react-icons/bs'
+import { ReactComponent as MetroIcon } from '../../assets/svg/metro.svg'
+
+const datenow = new Date()
 
 const Controls = ({
   setScoreVisibility,
@@ -95,79 +100,69 @@ const Controls = ({
         scoreIsVisible && 'active'
       }`}
     >
+      <div
+        className={`score-toggle ${scoreIsVisible ? 'unflipped' : 'flipped'}`}
+      >
+        {scoreIsVisible ? (
+          <BiArrowToLeft
+            onClick={() => setScoreVisibility(scoreIsVisible ? false : true)}
+          />
+        ) : (
+          <BiArrowToRight
+            onClick={() => setScoreVisibility(scoreIsVisible ? false : true)}
+          />
+        )}
+        <GiMusicalScore
+          onClick={() => setScoreVisibility(scoreIsVisible ? false : true)}
+        ></GiMusicalScore>
+      </div>
       <div className="controls">
-        <button
-          className={pause === true ? 'pause' : 'play'}
-          onMouseUp={handlePlayback}
-        >
-          {pause === true ? (
-            <>
-              <svg
-                viewBox="0 0 24 24"
-                width="44"
-                height="44"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="play-icon"
-              >
-                <polygon points="5 3 19 12 5 21 5 3"></polygon>
-              </svg>
-            </>
-          ) : (
-            <>
-              <svg
-                viewBox="0 0 24 24"
-                width="44"
-                height="44"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="play-icon"
-              >
-                <rect
-                  x="2"
-                  y="4"
-                  width="7"
-                  height="18"
-                ></rect>
-                <rect
-                  x="14"
-                  y="4"
-                  width="7"
-                  height="18"
-                ></rect>
-              </svg>
-            </>
-          )}
-        </button>
+        <div className="controls__buttons">
+          <button
+            className={pause === true ? 'play' : 'pause'}
+            onMouseUp={handlePlayback}
+          >
+            {pause === true ? <BsFillPlayFill /> : <BsPauseFill />}
+          </button>
 
-        <button onMouseUp={() => setSignalType('stop')}>abort</button>
-
+          <button
+            className="controls__buttons-stop"
+            onMouseUp={() => setSignalType('stop')}
+          >
+            <BsStopFill />
+          </button>
+        </div>
         <div className="select-div song">
-          <label>Song: </label>
-          <select onChange={handleProgression}>
-            <option value={0}>IV-I-V-vi in A Major</option>
-            <option value={1}>I-IV-V in C Major</option>
-            <option value={2}>ii-V-I in C Minor</option>
-            <option value={3}>I-vi-IV-V in G Major</option>
-            <option value={4}>I-V-♭VII-IV in A Major</option>
-            <option value={5}>vi-iii-IV-ii in D Major</option>
-            <option value={6}>IV-V-iii in E♭ Major</option>
-            <option value={7}>IV-iii-VI in G♭ Major</option>
-            <option value={8}>i-♭VI-♭III-♭VII A Minor</option>
-            <option value={9}>i-♭VII-♭VI-V7 F# Minor</option>
-          </select>
+          <div className="song__select">
+            <div className="song__icon_select">
+              <MetroIcon className="metro_icon" />
+              <div className="select_wrapper">
+                <select onChange={handleProgression}>
+                  <option value={0}>IV-I-V-vi in A Major</option>
+                  <option value={1}>I-IV-V in C Major</option>
+                  <option value={2}>ii-V-I in C Minor</option>
+                  <option value={3}>I-vi-IV-V in G Major</option>
+                  <option value={4}>I-V-♭VII-IV in A Major</option>
+                  <option value={5}>vi-iii-IV-ii in D Major</option>
+                  <option value={6}>IV-V-iii in E♭ Major</option>
+                  <option value={7}>IV-iii-VI in G♭ Major</option>
+                  <option value={8}>i-♭VI-♭III-♭VII A Minor</option>
+                  <option value={9}>i-♭VII-♭VI-V7 F# Minor</option>
+                </select>
+              </div>
+            </div>
+            <div className="song__info">
+              St. Louis Metro Bus Drivers - {datenow.toDateString()}
+            </div>
+          </div>
         </div>
         <div
           className="volume"
           style={{
-            background: `hsla(209, ${Math.round(volume * 100)}%, 20%, .2)`,
+            background: `hsla(209, ${Math.round(volume * 100)}%, 20%, .4)`,
           }}
         >
-          <div>
+          <div className="volume__amount">
             {returnVolumeIcon(Math.round(volume * 100))}
             {Math.round(volume * 100)}%
           </div>
@@ -193,34 +188,6 @@ const Controls = ({
             />
           </datalist>
         </div>
-      </div>
-
-      <div className="header__container__top">
-        <div className="score-toggle">
-          {scoreIsVisible ? (
-            <BiArrowToLeft
-              style={{
-                fontSize: '2vmin',
-              }}
-              onClick={() => setScoreVisibility(scoreIsVisible ? false : true)}
-            />
-          ) : (
-            <BiArrowToRight
-              style={{
-                fontSize: '2vmin',
-              }}
-              onClick={() => setScoreVisibility(scoreIsVisible ? false : true)}
-            />
-          )}
-          <GiMusicalScore
-            style={{
-              fontSize: '4vmin',
-            }}
-            onClick={() => setScoreVisibility(scoreIsVisible ? false : true)}
-          ></GiMusicalScore>
-        </div>
-
-        <h1>Concert performed by St. Louis Metro Bus Drivers</h1>
       </div>
     </div>
   )
