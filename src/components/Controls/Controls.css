@@ -1,7 +1,9 @@
 .header__container {
   backdrop-filter: blur(6px) saturate(150%);
-  box-shadow: 1px 2px 2px 0 #fff1;
   border-bottom: 2px solid hsla(0, 0%, 0%, 0.4);
+  border-left: 1px solid hsla(0, 0%, 0%, 0.6);
+  border-radius: 0 0 0 25px;
+  box-shadow: -1px 2px 2px 0 #fff1;
   box-sizing: border-box;
   color: #fffd;
   display: flex;
@@ -100,10 +102,13 @@ button span {
 }
 
 .volume {
-  display: flex;
-  flex-direction: column;
   align-items: center;
   border-radius: 25px;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  max-width: 250px;
+  min-width: 150px;
   padding: 1vmin;
 }
 
@@ -229,6 +234,8 @@ label {
   background: #383838aa;
   border-radius: 25px;
   display: flex;
+  flex: 1;
+  justify-content: center;
   min-width: 210px;
   padding: 1vmin;
   position: relative;
@@ -288,6 +295,11 @@ select {
 }
 
 @media only screen and (min-width: 768px) {
+  .header__container {
+    box-shadow: 1px 2px 2px 0 #fff1;
+    border-left: 0;
+    border-radius: 0;
+  }
   .controls {
     align-items: center;
   }

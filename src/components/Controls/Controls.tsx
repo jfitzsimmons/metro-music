@@ -1,4 +1,4 @@
-import React, { ChangeEvent } from 'react'
+import React, { ChangeEvent, useEffect } from 'react'
 import { connect } from 'react-redux'
 import {
   chooseProgression,
@@ -33,6 +33,7 @@ const Controls = ({
   pauseOrchestra,
   scoreIsVisible,
   addToText,
+  signalType,
   setSignalType, // testjpf overengineered.  just kill processes? have a countdown to when it'll be over!
 }: any) => {
   const delayText = debounce(() => {
@@ -91,6 +92,10 @@ const Controls = ({
       class: `controls-change`,
     })
   }
+
+  useEffect(() => {
+    signalType === 'stop' && pause === false && pauseOrchestra(true)
+  }, [pause, pauseOrchestra, signalType])
 
   return (
     <div
@@ -191,6 +196,7 @@ const mapStateToProps = (state: IState) => {
     scoreIsVisible: score.scoreIsVisible,
     volume: controls.volume,
     pause: controls.pause,
+    signalType: controls.signalType,
   }
 }
 
