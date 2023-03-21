@@ -1,4 +1,4 @@
-import React, { ChangeEvent } from 'react'
+import React, { ChangeEvent, useEffect } from 'react'
 import { connect } from 'react-redux'
 import {
   chooseProgression,
@@ -10,8 +10,6 @@ import {
 } from '../../store/actions'
 import { IState, Progression, TextCue } from '../../store/models'
 import './Controls.css'
-import { GiMusicalScore } from 'react-icons/gi'
-
 import { debounce } from '../../utils/tools'
 import {
   ImVolumeMedium,
@@ -19,6 +17,7 @@ import {
   ImVolumeHigh,
   ImVolumeMute,
 } from 'react-icons/im'
+import { GiMusicalScore } from 'react-icons/gi'
 import { BiArrowToLeft } from 'react-icons/bi'
 import { BsFillPlayFill, BsPauseFill, BsStopFill } from 'react-icons/bs'
 import { ReactComponent as MetroIcon } from '../../assets/svg/metro.svg'
@@ -34,6 +33,7 @@ const Controls = ({
   pauseOrchestra,
   scoreIsVisible,
   addToText,
+  signalType,
   setSignalType, // testjpf overengineered.  just kill processes? have a countdown to when it'll be over!
 }: any) => {
   const delayText = debounce(() => {
@@ -92,6 +92,10 @@ const Controls = ({
       class: `controls-change`,
     })
   }
+
+  useEffect(() => {
+    signalType === 'stop' && pause === false && pauseOrchestra(true)
+  }, [pause, pauseOrchestra, signalType])
 
   return (
     <div
@@ -192,6 +196,7 @@ const mapStateToProps = (state: IState) => {
     scoreIsVisible: score.scoreIsVisible,
     volume: controls.volume,
     pause: controls.pause,
+    signalType: controls.signalType,
   }
 }
 

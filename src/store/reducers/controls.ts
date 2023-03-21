@@ -9,13 +9,13 @@ import { ControlState } from '../models'
 
 const initialState: ControlState = {
   volume: '.5',
-  pause: false,
+  pause: true,
   progression: {
     label: 'IV-I-V-vi in A Major',
     index: 0,
   },
-  signalType: 'interrupt',
-  freshRender: true,
+  signalType: null,
+  freshRender: null,
 }
 
 const controlsReducer = (

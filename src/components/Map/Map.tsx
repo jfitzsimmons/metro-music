@@ -304,11 +304,11 @@ const Map = ({
   const loadNewData = useCallback(
     (timer: any) => {
       if (timer) {
+        if (timeout.current) clearTimeout(timeout.current)
         timeout.current = setTimeout(function () {
-          if (timeout.current) clearTimeout(timeout.current)
           ;(async function () {
             const response = chooseEnvEndpoint()
-
+            //console.log('loadNewData timer: ', timer)
             try {
               const busEntities = cleanBusData(await response)
               markerRefs.length = 0
@@ -340,40 +340,66 @@ const Map = ({
       text: `loading... The piece will begin shortly. loading...`,
       class: `loading`,
     })
-  }, [addToText, loadNewData])
+    setSignalType('interrupt')
+  }, [addToText, loadNewData, setSignalType])
 
   useEffect(() => {
+    //console.log('// 1st data load to get busses')
+
     // 1st data load to get busses
-    beginPiece()
-  }, [beginPiece])
+    freshRender === null &&
+      !pause &&
+      (prevFreshRender === null || prevFreshRender === false) &&
+      beginPiece()
+  }, [beginPiece, freshRender, pause, prevFreshRender])
 
   useEffect(() => {
+    //console.log('prevFreshRender', prevFreshRender)
+    //  console.log('prevPause', prevPause)
     if (
       prevBusses &&
       prevBusses.length > 0 &&
       !pause &&
       busses !== prevBusses &&
-      !prevFreshRender
+      prevFreshRender === false &&
+      freshRender === false
     ) {
+      //console.log('// play music and get new data when batch completes')
+
       // play music and get new data when batch completes
       let newRoutes = organizeBusses(busses, prevBusses, progression.index)
       loadNewData(makeMusicAndDance(newRoutes))
-    } else if (prevFreshRender) {
+    } else if (prevFreshRender === null && freshRender === false) {
       // 2nd data load to calculate movement
+      //console.log(' // 2nd data load to calculate movement')
       loadNewData(7000)
       countDown(7000)
     }
 
-    if (signalType === 'stop' || (pause && prevPause)) {
+    if (signalType === 'stop') {
       //hard reset
       if (timeout && timeout.current) clearTimeout(timeout.current)
       resetAudioContext()
-      setSignalType('interrupt')
-    } else if (!pause && prevPause) {
+      setSignalType(null)
+      !pause && setSignalType(null)
+      setFreshRender(null)
+    } else if (
+      signalType === 'interrupt' &&
+      !pause &&
+      prevPause === true &&
+      prevFreshRender !== null
+    ) {
       //soft reset
+      //console.log('//soft reset//soft reset//soft reset')
+
       let timeElapsed: number =
         Math.floor(Date.now() / 1000) - parseInt(busses[0].timestamp)
-      timeElapsed > 50 ? loadNewData(null) : loadNewData(4000)
+      if (timeElapsed > 50) {
+        loadNewData(null)
+      } else {
+        loadNewData(4000)
+        countDown(4000)
+      }
     }
   }, [
     pause,
