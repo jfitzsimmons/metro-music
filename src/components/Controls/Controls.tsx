@@ -10,8 +10,6 @@ import {
 } from '../../store/actions'
 import { IState, Progression, TextCue } from '../../store/models'
 import './Controls.css'
-import { GiMusicalScore } from 'react-icons/gi'
-
 import { debounce } from '../../utils/tools'
 import {
   ImVolumeMedium,
@@ -19,6 +17,7 @@ import {
   ImVolumeHigh,
   ImVolumeMute,
 } from 'react-icons/im'
+import { GiMusicalScore } from 'react-icons/gi'
 import { BiArrowToLeft } from 'react-icons/bi'
 import { BsFillPlayFill, BsPauseFill, BsStopFill } from 'react-icons/bs'
 import { ReactComponent as MetroIcon } from '../../assets/svg/metro.svg'
