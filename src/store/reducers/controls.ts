@@ -19,8 +19,8 @@ const initialState: ControlState = {
 }
 
 const controlsReducer = (
-  state = initialState,
   action: { type: string; payload: any },
+  state = initialState,
 ) => {
   switch (action.type) {
     case SET_VOLUME: {

@@ -1,16 +1,8 @@
 import React, { ChangeEvent, useEffect } from 'react'
 import { connect } from 'react-redux'
-import {
-  chooseProgression,
-  pauseOrchestra,
-  setSignalType,
-  setNewText,
-  setScoreVisibility,
-  setVolume,
-} from '../../store/actions'
-import { IState, Progression, TextCue } from '../../store/models'
+
 import './Controls.css'
-import { debounce } from '../../utils/tools'
+
 import {
   ImVolumeMedium,
   ImVolumeLow,
@@ -21,23 +13,33 @@ import { GiMusicalScore } from 'react-icons/gi'
 import { BiArrowToLeft } from 'react-icons/bi'
 import { BsFillPlayFill, BsPauseFill, BsStopFill } from 'react-icons/bs'
 import { ReactComponent as MetroIcon } from '../../assets/svg/metro.svg'
+import { debounce } from '../../utils/tools'
+import { IState, Progression, TextCue } from '../../store/models'
+import {
+  chooseProgression,
+  pauseOrchestra,
+  setSignalType,
+  setNewText,
+  setScoreVisibility,
+  setVolume,
+} from '../../store/actions'
 
 const datenow = new Date()
 
-const Controls = ({
-  setScoreVisibility,
+function Controls({
+  toggleScore,
   volume,
-  setVolume,
-  chooseProgression,
+  newVolume,
+  selectedProgression,
   pause,
-  pauseOrchestra,
+  setPause,
   scoreIsVisible,
   addToText,
   signalType,
-  setSignalType, // testjpf overengineered.  just kill processes? have a countdown to when it'll be over!
-}: any) => {
+  setHalt, // testjpf overengineered.  just kill processes? have a countdown to when it'll be over!
+}: any) {
   const delayText = debounce(() => {
-    //testjpf loop trhough existing calls and update volume property????
+    // testjpf loop trhough existing calls and update volume property????
 
     addToText({
       id: `volume${Date.now()}`,
@@ -51,7 +53,7 @@ const Controls = ({
   function handleVolume(event: ChangeEvent<HTMLInputElement>) {
     if (event.target) {
       const value = event.target.value.toString()
-      setVolume(value)
+      newVolume(value)
     }
   }
 
@@ -60,7 +62,7 @@ const Controls = ({
       const { options, selectedIndex } = event.target
       const index = event.target.value.toString()
       const label = options[selectedIndex].text
-      chooseProgression({ label, index })
+      selectedProgression({ label, index })
       addToText({
         id: `progression${Date.now()}`,
         text: `${label} will start playing with the next batch of data.`,
@@ -72,16 +74,18 @@ const Controls = ({
   function returnVolumeIcon(percent: number) {
     if (percent < 80 && percent > 30) {
       return <ImVolumeMedium />
-    } else if (percent >= 80) {
+    }
+    if (percent >= 80) {
       return <ImVolumeHigh />
-    } else if (percent === 0) {
+    }
+    if (percent === 0) {
       return <ImVolumeMute />
     }
     return <ImVolumeLow />
   }
 
   function handlePlayback() {
-    pauseOrchestra(pause === true ? false : true)
+    setPause(pause !== true)
     addToText({
       id: `playback${Date.now()}`,
       text: `The piece will ${
@@ -94,8 +98,8 @@ const Controls = ({
   }
 
   useEffect(() => {
-    signalType === 'stop' && pause === false && pauseOrchestra(true)
-  }, [pause, pauseOrchestra, signalType])
+    if (signalType === 'stop' && pause === false) setPause(true)
+  }, [pause, setPause, signalType])
 
   return (
     <div
@@ -106,16 +110,13 @@ const Controls = ({
       <div
         className={`score-toggle ${scoreIsVisible ? 'unflipped' : 'flipped'}`}
       >
-        <BiArrowToLeft
-          onClick={() => setScoreVisibility(scoreIsVisible ? false : true)}
-        />
-        <GiMusicalScore
-          onClick={() => setScoreVisibility(scoreIsVisible ? false : true)}
-        ></GiMusicalScore>
+        <BiArrowToLeft onClick={() => toggleScore(!scoreIsVisible)} />
+        <GiMusicalScore onClick={() => toggleScore(!scoreIsVisible)} />
       </div>
       <div className="controls">
         <div className="controls__buttons">
           <button
+            type="button"
             className={pause === true ? 'play' : 'pause'}
             onMouseUp={handlePlayback}
           >
@@ -123,8 +124,9 @@ const Controls = ({
           </button>
 
           <button
+            type="button"
             className="controls__buttons-stop"
-            onMouseUp={() => setSignalType('stop')}
+            onMouseUp={() => setHalt('stop')}
           >
             <BsStopFill />
           </button>
@@ -200,17 +202,14 @@ const mapStateToProps = (state: IState) => {
   }
 }
 
-const mapDispatchToProps = (dispatch: any) => {
-  return {
-    setScoreVisibility: (payload: boolean) =>
-      dispatch(setScoreVisibility(payload)),
-    setVolume: (payload: string) => dispatch(setVolume(payload)),
-    pauseOrchestra: (payload: boolean) => dispatch(pauseOrchestra(payload)),
-    chooseProgression: (payload: Progression) =>
-      dispatch(chooseProgression(payload)),
-    setSignalType: (payload: string) => dispatch(setSignalType(payload)),
-    addToText: (payload: TextCue) => dispatch(setNewText(payload)),
-  }
-}
+const mapDispatchToProps = (dispatch: any) => ({
+  toggleScore: (payload: boolean) => dispatch(setScoreVisibility(payload)),
+  newVolume: (payload: string) => dispatch(setVolume(payload)),
+  setPause: (payload: boolean) => dispatch(pauseOrchestra(payload)),
+  selectedProgression: (payload: Progression) =>
+    dispatch(chooseProgression(payload)),
+  setHalt: (payload: string) => dispatch(setSignalType(payload)),
+  addToText: (payload: TextCue) => dispatch(setNewText(payload)),
+})
 
 export default connect(mapStateToProps, mapDispatchToProps)(Controls)

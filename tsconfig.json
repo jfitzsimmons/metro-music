@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "jsx": "react",
+    "jsx": "react-jsx",
     "target": "es6",
     "moduleResolution": "node",
     "module": "commonjs",
@@ -10,6 +10,7 @@
     "experimentalDecorators": true,
     "sourceMap": true,
     "pretty": true,
+    "allowJs": true,
     "allowUnreachableCode": true,
     "allowUnusedLabels": true,
     "noImplicitAny": true,
@@ -20,8 +21,16 @@
     "listFiles": false,
     "noEmitHelpers": true,
     "esModuleInterop": true,
+    "skipLibCheck": true,
+    "allowSyntheticDefaultImports": true,
+    "strict": true,
+    "forceConsistentCasingInFileNames": true,
+    "noFallthroughCasesInSwitch": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": false
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "server/**/*"],
   "exclude": ["node_modules"],
   "compileOnSave": false
 }

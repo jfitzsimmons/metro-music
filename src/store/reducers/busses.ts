@@ -12,8 +12,8 @@ const initialState: BusState = {
 }
 
 const bussesReducer = (
-  state: BusState = initialState,
   action: { type: string; payload: any },
+  state: BusState = initialState,
 ): BusState => {
   switch (action.type) {
     case SET_ALL_BUSSES: {

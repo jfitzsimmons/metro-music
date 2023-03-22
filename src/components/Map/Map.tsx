@@ -20,19 +20,18 @@ import {
 } from '../../utils/webAudio'
 import { countBy, distance, rndmRng } from '../../utils/calculations'
 import { getAdsr, pickOctaveByLat, pickOctave } from '../../utils/waveShaping'
-import { usePrevious } from '../../utils/tools'
-import { chooseEnvEndpoint } from '../../utils/api'
+import { usePrevious, chooseEnvEndpoint } from '../../utils/tools'
 import './Map.css'
 import store from '../../store'
 
 let retiredVehicles: Bus[] = []
-let markerRefs: React.RefObject<L.Marker>[] = []
+const markerRefs: React.RefObject<L.Marker>[] = []
 let longAvg = -90.28392791748047
-let progress = 0,
-  multiplier = 0,
-  chord = 0,
-  start = 0,
-  concertStart = 0
+let progress = 0
+let multiplier = 0
+let chord = 0
+let start = 0
+let concertStart = 0
 
 const cleanBusData = (entities: any) => {
   const cleaned: Bus[] = []
@@ -53,6 +52,9 @@ const findMarker = (id: string) =>
     (m) =>
       m.current &&
       m.current.options &&
+      m.current.options.icon &&
+      m.current.options.icon.options &&
+      m.current.options.icon.options.className &&
       m.current.options.icon.options.className.includes(`map-icon_${id}`),
   )
 
@@ -68,6 +70,7 @@ const organizeBusses = (
       pastBusses[i].id === nextBusses[i2].id ||
       nextBusses.some((b: Bus) => b.id === pastBusses[i].id)
     ) {
+      // testjpf probably need to use a Bus class with methosd for setting properties
       nextBusses[i2].distance = distance(
         pastBusses[i].latitude,
         pastBusses[i].longitude,
@@ -75,7 +78,8 @@ const organizeBusses = (
         nextBusses[i2].longitude,
       )
       nextBusses[i2].timing =
-        parseInt(nextBusses[i2].timestamp) - parseInt(pastBusses[i].timestamp)
+        parseInt(nextBusses[i2].timestamp, 10) -
+        parseInt(pastBusses[i].timestamp, 10)
       nextBusses[i2].mph =
         (distance(
           pastBusses[i].latitude,
@@ -83,72 +87,99 @@ const organizeBusses = (
           nextBusses[i2].latitude,
           nextBusses[i2].longitude,
         ) /
-          (parseInt(nextBusses[i2].timestamp) -
-            parseInt(pastBusses[i].timestamp))) *
+          (parseInt(nextBusses[i2].timestamp, 10) -
+            parseInt(pastBusses[i].timestamp, 10))) *
         3600
 
-      pastBusses[i].id !== nextBusses[i2].id && i--
+      if (pastBusses[i].id !== nextBusses[i2].id) i--
     } else {
       retiredVehicles.push(pastBusses[i])
       i2--
     }
 
-    nextBusses[i2 + 1] && i2++
+    if (nextBusses[i2 + 1]) i2++
   }
 
-  retiredVehicles &&
-    retiredVehicles.length > 0 &&
+  function handleStaleVehicles(prog: number) {
+    const currentProgress = Math.round(Date.now() / 1000) - concertStart
+    const delay =
+      currentProgress < 7
+        ? 7 - currentProgress
+        : 8 - ((currentProgress % 8) + 1)
+
+    retiredVehicles.forEach((v, i) => {
+      if (i < 4) {
+        type OctaveKey = keyof typeof noteFreq
+        const octave: OctaveKey = pickOctave(6 - i)
+        const octaveNoteFreqs = noteFreq[octave]
+        type NoteKey = keyof typeof octaveNoteFreqs
+        const note: NoteKey = progressions[prog][3][Math.round(rndmRng(3, 0))]
+        if (note) playChord(noteFreq[octave][note], delay)
+      }
+    })
+
+    const amount = retiredVehicles.length
+
+    setTimeout(
+      () =>
+        store.dispatch(
+          setNewText({
+            id: `retired${Date.now()}`,
+            text: `${amount} ${
+              amount === 1 ? 'bus is' : 'busses are'
+            } without updates`,
+            class: `retired`,
+          }),
+        ),
+      delay * 1000,
+    )
+
+    retiredVehicles = []
+  }
+
+  if (retiredVehicles && retiredVehicles.length > 0)
     handleStaleVehicles(progression)
 
   const updatedRoutes = nextBusses
     .filter((vehicle: Bus) => vehicle && vehicle.distance !== 0)
-    .sort(function (x: Bus, y: Bus) {
-      return parseInt(x.timestamp) - parseInt(y.timestamp)
-    })
+    .sort(
+      (x: Bus, y: Bus) => parseInt(x.timestamp, 10) - parseInt(y.timestamp, 10),
+    )
 
   updatedRoutes.shift()
 
   return updatedRoutes
 }
 
-function handleStaleVehicles(progression: number) {
-  let progress = Math.round(Date.now() / 1000) - concertStart
-  let delay = progress < 7 ? 7 - progress : 8 - ((progress % 8) + 1)
+const BusMarker = memo(({ place, selectedBus, showPreview }: any) => {
+  const newRef = createRef<L.Marker>()
+  markerRefs.push(newRef)
+  return (
+    <Marker
+      key={place.id}
+      position={[place.latitude, place.longitude]}
+      eventHandlers={{ click: () => showPreview(place) }}
+      icon={L.divIcon({
+        iconSize: [40, 40],
+        iconAnchor: [20, 20],
+        popupAnchor: [0, 0],
+        shadowSize: [0, 0],
+        className: `map-icon map-icon_${place.id} ${
+          selectedBus && selectedBus.id === place.id && 'icon-selected'
+        }`,
+      })}
+      ref={newRef as React.RefObject<L.Marker>}
+    >
+      <Tooltip>{place.label}</Tooltip>
+    </Marker>
+  )
+})
 
-  retiredVehicles.forEach((v, i) => {
-    if (i < 4) {
-      type OctaveKey = keyof typeof noteFreq
-      let octave: OctaveKey = pickOctave(6 - i)
-      let octaveNoteFreqs = noteFreq[octave]
-      type NoteKey = keyof typeof octaveNoteFreqs
-      let note: NoteKey =
-        progressions[progression][3][Math.round(rndmRng(3, 0))]
-      if (note) playChord(noteFreq[octave][note], delay)
-    }
-  })
-
-  const amount = retiredVehicles.length
-
-  setTimeout(function () {
-    store.dispatch(
-      setNewText({
-        id: `retired${Date.now()}`,
-        text: `${amount} ${
-          amount === 1 ? 'bus is' : 'busses are'
-        } without updates`,
-        class: `retired`,
-      }),
-    )
-  }, delay * 1000)
-
-  retiredVehicles = []
-}
-
-const Map = ({
+function Map({
   isVisible,
   busses,
   freshRender,
-  setFreshRender,
+  flagRefresh,
   selectedBus,
   togglePreview,
   setBusForPreview,
@@ -158,8 +189,8 @@ const Map = ({
   pause,
   progression,
   signalType,
-  setSignalType,
-}: any) => {
+  setHalt,
+}: any) {
   const timeout: { current: NodeJS.Timeout | null } = useRef(null)
   const defaultPosition: LatLngExpression = [38.65727, -90.29789]
   const prevBusses = usePrevious(busses)
@@ -170,7 +201,7 @@ const Map = ({
     (timer: number) => {
       if (timer >= 1000) {
         for (let i = timer; (i -= 1000); ) {
-          setTimeout(function () {
+          setTimeout(() => {
             addToText({
               id: `countdown${Date.now()}`,
               text: `${i === 1000 ? 'updates in' : '...'} ${
@@ -209,10 +240,12 @@ const Map = ({
         (r: { timestamp: number }) => r.timestamp,
       )
 
-      let batchStart = parseInt(
-        routes.sort(function (x: Bus, y: Bus) {
-          return parseInt(x.timestamp) - parseInt(y.timestamp)
-        })[0].timestamp,
+      const batchStart = parseInt(
+        routes.sort(
+          (x: Bus, y: Bus) =>
+            parseInt(x.timestamp, 10) - parseInt(y.timestamp, 10),
+        )[0].timestamp,
+        10,
       )
 
       let count = 1
@@ -220,30 +253,30 @@ const Map = ({
       if (concertStart === 0) concertStart = batchStart
 
       routes.forEach((r: Bus, i: number) => {
-        progress = parseInt(r.timestamp) - concertStart //play time in current batch
-        multiplier = Math.floor(progress / 8) //helps narrow scope to single measure
-        //narrow scope to a single chord in progression
+        progress = parseInt(r.timestamp, 10) - concertStart // play time in current batch
+        multiplier = Math.floor(progress / 8) // helps narrow scope to single measure
+        // narrow scope to a single chord in progression
         chord =
           progress >= 8
             ? Math.floor((progress - 8 * multiplier) / 2)
             : Math.floor(progress / 2)
 
         type OctaveKey = keyof typeof noteFreq
-        let octave: OctaveKey = pickOctaveByLat(r.latitude)
-        let octaveNoteFreqs = noteFreq[octave]
+        const octave: OctaveKey = pickOctaveByLat(r.latitude)
+        const octaveNoteFreqs = noteFreq[octave]
         type NoteKey = keyof typeof octaveNoteFreqs
-        let note: NoteKey =
+        const note: NoteKey =
           progressions[progression.index][chord][Math.round(rndmRng(3, 0))] // Ex: C#
 
         // stutter simultaneous start times
         if (routes[i - 1] && r.timestamp === routes[i - 1].timestamp) {
           start =
-            parseInt(r.timestamp) -
+            parseInt(r.timestamp, 10) -
             batchStart +
             (1 / timestampDupes[r.timestamp]) * count
           count++
         } else {
-          start = parseInt(r.timestamp) - batchStart
+          start = parseInt(r.timestamp, 10) - batchStart
           count = 1
         }
 
@@ -254,13 +287,13 @@ const Map = ({
         if (end > 4) end = 4
         if (r && r.mph) adsr = getAdsr(r.mph)
         if (r.latitude > 38.66) longAvg = -90.3517098
-        let pan =
+        const pan =
           (Math.abs(longAvg) - Math.abs(r.longitude)) * 6 * (octave * 0.15)
 
         const found = findMarker(r.id)
-        //testjpf need to track timeout and clear on abort!
-        //push to an array, etc...
-        setTimeout(function () {
+        // testjpf need to track timeout and clear on abort!
+        // push to an array, etc...
+        setTimeout(() => {
           if (found && found.current) {
             found.current.setIcon(
               L.divIcon({
@@ -281,7 +314,7 @@ const Map = ({
           })
         }, start * 1000)
 
-        let sweep = {
+        const sweep = {
           volume,
           i,
           start,
@@ -294,9 +327,9 @@ const Map = ({
         playSweep(sweep)
       })
 
-      let timeout: number =
-        (parseInt(routes[routes.length - 1].timestamp) - batchStart) * 1000
-      return timeout // when batch will be done
+      const endTime: number =
+        (parseInt(routes[routes.length - 1].timestamp, 10) - batchStart) * 1000
+      return endTime // when batch will be done
     },
     [addToText, countDown, progression.index, volume],
   )
@@ -305,15 +338,15 @@ const Map = ({
     (timer: any) => {
       if (timer) {
         if (timeout.current) clearTimeout(timeout.current)
-        timeout.current = setTimeout(function () {
-          ;(async function () {
+        timeout.current = setTimeout(() => {
+          ;(async function startCall() {
             const response = chooseEnvEndpoint()
-            //console.log('loadNewData timer: ', timer)
+            // console.log('loadNewData timer: ', timer)
             try {
               const busEntities = cleanBusData(await response)
               markerRefs.length = 0
               setNewBusMarkers(busEntities)
-              setFreshRender(false)
+              flagRefresh(false)
             } catch (err) {
               addToText({
                 id: `loading${Date.now()}`,
@@ -326,11 +359,11 @@ const Map = ({
           })()
         }, timer)
       } else {
-        setFreshRender(true)
+        flagRefresh(true)
         setNewBusMarkers([])
       }
     },
-    [addToText, countDown, setFreshRender, setNewBusMarkers],
+    [addToText, countDown, flagRefresh, setNewBusMarkers],
   )
 
   const beginPiece = useCallback(() => {
@@ -340,21 +373,23 @@ const Map = ({
       text: `loading... The piece will begin shortly. loading...`,
       class: `loading`,
     })
-    setSignalType('interrupt')
-  }, [addToText, loadNewData, setSignalType])
+    setHalt('interrupt')
+  }, [addToText, loadNewData, setHalt])
 
   useEffect(() => {
-    //console.log('// 1st data load to get busses')
+    // console.log('// 1st data load to get busses')
 
     // 1st data load to get busses
-    freshRender === null &&
+    if (
+      freshRender === null &&
       !pause &&
-      (prevFreshRender === null || prevFreshRender === false) &&
+      (prevFreshRender === null || prevFreshRender === false)
+    )
       beginPiece()
   }, [beginPiece, freshRender, pause, prevFreshRender])
 
   useEffect(() => {
-    //console.log('prevFreshRender', prevFreshRender)
+    // console.log('prevFreshRender', prevFreshRender)
     //  console.log('prevPause', prevPause)
     if (
       prevBusses &&
@@ -364,36 +399,36 @@ const Map = ({
       prevFreshRender === false &&
       freshRender === false
     ) {
-      //console.log('// play music and get new data when batch completes')
+      // console.log('// play music and get new data when batch completes')
 
       // play music and get new data when batch completes
-      let newRoutes = organizeBusses(busses, prevBusses, progression.index)
+      const newRoutes = organizeBusses(busses, prevBusses, progression.index)
       loadNewData(makeMusicAndDance(newRoutes))
     } else if (prevFreshRender === null && freshRender === false) {
       // 2nd data load to calculate movement
-      //console.log(' // 2nd data load to calculate movement')
+      // console.log(' // 2nd data load to calculate movement')
       loadNewData(7000)
       countDown(7000)
     }
 
     if (signalType === 'stop') {
-      //hard reset
+      // hard reset
       if (timeout && timeout.current) clearTimeout(timeout.current)
       resetAudioContext()
-      setSignalType(null)
-      !pause && setSignalType(null)
-      setFreshRender(null)
+      setHalt(null)
+      if (!pause) setHalt(null)
+      flagRefresh(null)
     } else if (
       signalType === 'interrupt' &&
       !pause &&
       prevPause === true &&
       prevFreshRender !== null
     ) {
-      //soft reset
-      //console.log('//soft reset//soft reset//soft reset')
+      // soft reset
+      // console.log('//soft reset//soft reset//soft reset')
 
-      let timeElapsed: number =
-        Math.floor(Date.now() / 1000) - parseInt(busses[0].timestamp)
+      const timeElapsed: number =
+        Math.floor(Date.now() / 1000) - parseInt(busses[0].timestamp, 10)
       if (timeElapsed > 50) {
         loadNewData(null)
       } else {
@@ -409,13 +444,18 @@ const Map = ({
     makeMusicAndDance,
     signalType,
     prevPause,
-    setSignalType,
+    setHalt,
     freshRender,
     prevFreshRender,
     progression.index,
-    setFreshRender,
+    flagRefresh,
     countDown,
   ])
+
+  const showBus = (place: Bus) => {
+    setBusForPreview(place)
+    togglePreview(true)
+  }
 
   const showPreview = (place: Bus) => {
     if (isVisible) {
@@ -430,41 +470,12 @@ const Map = ({
     }
   }
 
-  const showBus = (place: Bus) => {
-    setBusForPreview(place)
-    togglePreview(true)
-  }
-
-  const BusMarker = memo(({ place }: any) => {
-    const newRef = createRef<L.Marker>()
-    markerRefs.push(newRef)
-    return (
-      <Marker
-        key={place.id}
-        position={[place.latitude, place.longitude]}
-        eventHandlers={{ click: () => showPreview(place) }}
-        icon={L.divIcon({
-          iconSize: [40, 40],
-          iconAnchor: [20, 20],
-          popupAnchor: [0, 0],
-          shadowSize: [0, 0],
-          className: `map-icon map-icon_${place.id} ${
-            selectedBus && selectedBus.id === place.id && 'icon-selected'
-          }`,
-        })}
-        ref={newRef as React.RefObject<L.Marker>}
-      >
-        <Tooltip>{place.label}</Tooltip>
-      </Marker>
-    )
-  })
-
   return (
     <div className="map__container">
       <MapContainer
         center={defaultPosition}
         zoom={11}
-        scrollWheelZoom={true}
+        scrollWheelZoom
         style={{ height: '100vh' }}
         zoomControl={false}
       >
@@ -478,6 +489,8 @@ const Map = ({
             <BusMarker
               key={place.id}
               place={place}
+              showPreview={showPreview}
+              selectedBus={selectedBus}
             />
           ))}
       </MapContainer>
@@ -499,16 +512,14 @@ const mapStateToProps = (state: IState) => {
   }
 }
 
-const mapDispatchToProps = (dispatch: any) => {
-  return {
-    togglePreview: (payload: boolean) =>
-      dispatch(setBusPreviewVisibility(payload)),
-    setBusForPreview: (payload: Bus) => dispatch(setSelectedBus(payload)),
-    setNewBusMarkers: (payload: Bus[]) => dispatch(setAllBusses(payload)),
-    addToText: (payload: TextCue) => dispatch(setNewText(payload)),
-    setSignalType: (payload: string) => dispatch(setSignalType(payload)),
-    setFreshRender: (payload: boolean) => dispatch(setFreshRender(payload)),
-  }
-}
+const mapDispatchToProps = (dispatch: any) => ({
+  togglePreview: (payload: boolean) =>
+    dispatch(setBusPreviewVisibility(payload)),
+  setBusForPreview: (payload: Bus) => dispatch(setSelectedBus(payload)),
+  setNewBusMarkers: (payload: Bus[]) => dispatch(setAllBusses(payload)),
+  addToText: (payload: TextCue) => dispatch(setNewText(payload)),
+  setHalt: (payload: string) => dispatch(setSignalType(payload)),
+  flagRefresh: (payload: boolean) => dispatch(setFreshRender(payload)),
+})
 
 export default connect(mapStateToProps, mapDispatchToProps)(Map)

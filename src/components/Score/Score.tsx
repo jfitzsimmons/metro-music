@@ -1,33 +1,31 @@
-import React from 'react'
+import React, { memo, useEffect, useRef } from 'react'
 import { connect } from 'react-redux'
+import { BiArrowToLeft } from 'react-icons/bi'
+import { BsMusicNoteBeamed } from 'react-icons/bs'
 import { setScoreVisibility } from '../../store/actions'
 import { IState, TextCue } from '../../store/models'
 import './Score.css'
-import { memo, useEffect, useRef } from 'react'
 import { truncateAfter, truncateBefore, isInViewport } from '../../utils/tools'
-import { BiArrowBack } from 'react-icons/bi'
-import { BsMusicNoteBeamed } from 'react-icons/bs'
-const Line = memo(({ text, className }: any) => {
-  return (
-    <div className={`${className} score__list__item`}>
-      {className === 'vehicle' ? (
-        <>
-          <span className="bus">{truncateAfter(text, '~')}</span>
-          <span className="triangle"></span>
-          <span className="note">{truncateBefore(text, '~')}</span>
-        </>
-      ) : (
-        text
-      )}
-    </div>
-  )
-})
 
-const Score = (props: {
+const Line = memo(({ text, className }: any) => (
+  <div className={`${className} score__list__item`}>
+    {className === 'vehicle' ? (
+      <>
+        <span className="bus">{truncateAfter(text, '~')}</span>
+        <span className="triangle" />
+        <span className="note">{truncateBefore(text, '~')}</span>
+      </>
+    ) : (
+      text
+    )}
+  </div>
+))
+
+function Score(props: {
   scoreIsVisible: boolean
   closeScore: () => void
   textCues: TextCue[]
-}) => {
+}) {
   const { scoreIsVisible, closeScore, textCues } = props
   const bottomRef: { current: HTMLElement | null } = useRef(null)
 
@@ -56,14 +54,18 @@ const Score = (props: {
       }`}
     >
       <div className="score__header">
-        <span
-          className="score__header__close"
-          role="button"
-          onClick={() => closeScore()}
-        >
-          <BiArrowBack />
-        </span>
-        <span className="score__header__title">Score</span>
+        {scoreIsVisible && (
+          <>
+            <button
+              className="score__header__close"
+              type="button"
+              onClick={() => closeScore()}
+            >
+              <BiArrowToLeft />
+            </button>
+            <span className="score__header__title">Score</span>
+          </>
+        )}
       </div>
       <div className="score__list">
         {renderItems()}
@@ -87,10 +89,8 @@ const mapStateToProps = (state: IState) => {
   }
 }
 
-const mapDispatchToProps = (dispatch: any) => {
-  return {
-    closeScore: () => dispatch(setScoreVisibility(false)),
-  }
-}
+const mapDispatchToProps = (dispatch: any) => ({
+  closeScore: () => dispatch(setScoreVisibility(false)),
+})
 
 export default connect(mapStateToProps, mapDispatchToProps)(Score)

@@ -1,4 +1,4 @@
-let mphAvg = 16.385464299320347
+const mphAvg = 16.385464299320347
 
 export function pickOctaveByLat(f: number) {
   if (f < 38.5272947947) return 1
