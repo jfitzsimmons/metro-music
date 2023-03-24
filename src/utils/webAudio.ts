@@ -197,8 +197,11 @@ export function playSweep(sweep: {
   const biquadFilter: BiquadFilterNode = audioContext.createBiquadFilter()
 
   if (sweep.freq < 600) {
-    const cut = (426 - Math.abs(sweep.freq - 175)) * 0.0007
+    const cut = (426 - Math.abs(sweep.freq - 175)) * 0.00065
     sweep.volume = (parseFloat(sweep.volume) - cut).toString()
+    if (sweep.freq < 200 && sweep.freq > 175) {
+      sweep.volume = (parseFloat(sweep.volume) * 0.3).toString()
+    }
   }
 
   biquadFilter.type = 'bandpass'
