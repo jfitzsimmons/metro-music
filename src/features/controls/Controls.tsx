@@ -1,16 +1,5 @@
 import React, { ChangeEvent, useEffect } from 'react'
-import { connect } from 'react-redux'
-import {
-  chooseProgression,
-  pauseOrchestra,
-  setSignalType,
-  setNewText,
-  setScoreVisibility,
-  setVolume,
-} from '../../store/actions'
-import { IState, Progression, TextCue } from '../../store/models'
-import './Controls.css'
-import { debounce } from '../../utils/tools'
+import './controls.css'
 import {
   ImVolumeMedium,
   ImVolumeLow,
@@ -20,38 +9,44 @@ import {
 import { GiMusicalScore } from 'react-icons/gi'
 import { BiArrowToLeft } from 'react-icons/bi'
 import { BsFillPlayFill, BsPauseFill, BsStopFill } from 'react-icons/bs'
+import { useAppSelector, useAppDispatch } from '../../store/hooks'
+
 import { ReactComponent as MetroIcon } from '../../assets/svg/metro.svg'
+import { debounce } from '../../utils/tools'
+import { newTextAdded, scoreVisibilitySet } from '../score/scoreSlice'
+import {
+  volumeSet,
+  progressionChosen,
+  orchestraPaused,
+  signalTypeSet,
+} from './controlsSlice'
 
 const datenow = new Date()
 
-const Controls = ({
-  setScoreVisibility,
-  volume,
-  setVolume,
-  chooseProgression,
-  pause,
-  pauseOrchestra,
-  scoreIsVisible,
-  addToText,
-  signalType,
-  setSignalType, // testjpf overengineered.  just kill processes? have a countdown to when it'll be over!
-}: any) => {
-  const delayText = debounce(() => {
-    //testjpf loop trhough existing calls and update volume property????
+export default function Controls() {
+  const dispatch = useAppDispatch()
+  const { volume, pause, signalType } = useAppSelector(
+    (state) => state.controls,
+  )
+  const { scoreIsVisible } = useAppSelector((state) => state.score)
 
-    addToText({
-      id: `volume${Date.now()}`,
-      text: `Volume will be set to ${Math.round(
-        parseFloat(volume) * 100,
-      )}% with the next batch of data.`,
-      class: `controls-change`,
-    })
+  const delayText = debounce(() => {
+    // testjpf loop trhough existing calls and update volume property????
+    dispatch(
+      newTextAdded({
+        id: `volume${Date.now()}`,
+        text: `Volume will be set to ${Math.round(
+          parseFloat(volume) * 100,
+        )}% with the next batch of data.`,
+        class: `controls-change`,
+      }),
+    )
   }, 500)
 
   function handleVolume(event: ChangeEvent<HTMLInputElement>) {
     if (event.target) {
       const value = event.target.value.toString()
-      setVolume(value)
+      dispatch(volumeSet(value))
     }
   }
 
@@ -60,42 +55,49 @@ const Controls = ({
       const { options, selectedIndex } = event.target
       const index = event.target.value.toString()
       const label = options[selectedIndex].text
-      chooseProgression({ label, index })
-      addToText({
-        id: `progression${Date.now()}`,
-        text: `${label} will start playing with the next batch of data.`,
-        class: `controls-change`,
-      })
+      dispatch(progressionChosen({ label, index }))
+      dispatch(
+        newTextAdded({
+          id: `progression${Date.now()}`,
+          text: `${label} will start playing with the next batch of data.`,
+          class: `controls-change`,
+        }),
+      )
     }
   }
 
   function returnVolumeIcon(percent: number) {
     if (percent < 80 && percent > 30) {
       return <ImVolumeMedium />
-    } else if (percent >= 80) {
+    }
+    if (percent >= 80) {
       return <ImVolumeHigh />
-    } else if (percent === 0) {
+    }
+    if (percent === 0) {
       return <ImVolumeMute />
     }
     return <ImVolumeLow />
   }
 
   function handlePlayback() {
-    pauseOrchestra(pause === true ? false : true)
-    addToText({
-      id: `playback${Date.now()}`,
-      text: `The piece will ${
-        pause === false
-          ? 'stop after this batch of data.'
-          : 'begin again shortly.'
-      } `,
-      class: `controls-change`,
-    })
+    dispatch(orchestraPaused(pause !== true))
+    dispatch(
+      newTextAdded({
+        id: `playback${Date.now()}`,
+        text: `The piece will ${
+          pause === false
+            ? 'stop after this batch of data.'
+            : 'begin again shortly.'
+        } `,
+        class: `controls-change`,
+      }),
+    )
   }
 
   useEffect(() => {
-    signalType === 'stop' && pause === false && pauseOrchestra(true)
-  }, [pause, pauseOrchestra, signalType])
+    if (signalType === 'stop' && pause === false)
+      dispatch(orchestraPaused(true))
+  }, [dispatch, pause, signalType])
 
   return (
     <div
@@ -106,16 +108,13 @@ const Controls = ({
       <div
         className={`score-toggle ${scoreIsVisible ? 'unflipped' : 'flipped'}`}
       >
-        <BiArrowToLeft
-          onClick={() => setScoreVisibility(scoreIsVisible ? false : true)}
-        />
-        <GiMusicalScore
-          onClick={() => setScoreVisibility(scoreIsVisible ? false : true)}
-        ></GiMusicalScore>
+        <BiArrowToLeft onClick={() => dispatch(scoreVisibilitySet())} />
+        <GiMusicalScore onClick={() => dispatch(scoreVisibilitySet())} />
       </div>
       <div className="controls">
         <div className="controls__buttons">
           <button
+            type="button"
             className={pause === true ? 'play' : 'pause'}
             onMouseUp={handlePlayback}
           >
@@ -123,8 +122,9 @@ const Controls = ({
           </button>
 
           <button
+            type="button"
             className="controls__buttons-stop"
-            onMouseUp={() => setSignalType('stop')}
+            onMouseUp={() => dispatch(signalTypeSet('stop'))}
           >
             <BsStopFill />
           </button>
@@ -156,12 +156,14 @@ const Controls = ({
         <div
           className="volume"
           style={{
-            background: `hsla(209, ${Math.round(volume * 100)}%, 20%, .4)`,
+            background: `hsla(209, ${Math.round(
+              parseFloat(volume) * 100,
+            )}%, 20%, .4)`,
           }}
         >
           <div className="volume__amount">
-            {returnVolumeIcon(Math.round(volume * 100))}
-            {Math.round(volume * 100)}%
+            {returnVolumeIcon(Math.round(parseFloat(volume) * 100))}
+            {Math.round(parseFloat(volume) * 100)}%
           </div>
           <input
             type="range"
@@ -189,28 +191,3 @@ const Controls = ({
     </div>
   )
 }
-
-const mapStateToProps = (state: IState) => {
-  const { score, controls } = state
-  return {
-    scoreIsVisible: score.scoreIsVisible,
-    volume: controls.volume,
-    pause: controls.pause,
-    signalType: controls.signalType,
-  }
-}
-
-const mapDispatchToProps = (dispatch: any) => {
-  return {
-    setScoreVisibility: (payload: boolean) =>
-      dispatch(setScoreVisibility(payload)),
-    setVolume: (payload: string) => dispatch(setVolume(payload)),
-    pauseOrchestra: (payload: boolean) => dispatch(pauseOrchestra(payload)),
-    chooseProgression: (payload: Progression) =>
-      dispatch(chooseProgression(payload)),
-    setSignalType: (payload: string) => dispatch(setSignalType(payload)),
-    addToText: (payload: TextCue) => dispatch(setNewText(payload)),
-  }
-}
-
-export default connect(mapStateToProps, mapDispatchToProps)(Controls)

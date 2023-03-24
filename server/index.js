@@ -1,6 +1,6 @@
 const GtfsRealtimeBindings = require('gtfs-realtime-bindings')
 const cors = require('cors')
-const node_fetch = require('node-fetch')
+const nodeFetch = require('node-fetch')
 const express = require('express')
 const bodyParser = require('body-parser')
 
@@ -25,7 +25,7 @@ app.get('/', (req, res) => {
 app.get('/busses/', async (req, res) => {
   try {
     // @ts-ignore
-    const response = await node_fetch(API_ENDPOINT)
+    const response = await nodeFetch(API_ENDPOINT)
     if (!response.ok) {
       const error = new Error(
         `${response.url}: ${response.status} ${response.statusText}`,
@@ -49,7 +49,6 @@ app.get('/busses/', async (req, res) => {
     }
   }
 })
-;(async function () {})()
 
 const port = 8080
 app.listen(port, () => {

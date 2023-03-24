@@ -2,8 +2,8 @@ export interface ControlState {
   volume: string
   pause: boolean
   progression: Progression
-  signalType: string
-  freshRender: boolean
+  signalType: string | null
+  freshRender: boolean | null
 }
 
 export interface Progression {
@@ -16,7 +16,7 @@ export interface Routes {
   retiredVehicles: Bus[] | null
 }
 
-export interface scoreState {
+export interface ScoreState {
   scoreIsVisible: boolean
   sweepTime: number
   textCues: TextCue[]
@@ -32,12 +32,14 @@ export interface IBusState {
   busses: Bus[]
   selectedBus: Bus | null
   placePreviewsIsVisible: boolean
+  retiredBusses: Bus[]
+  updatedRoutes: Bus[]
 }
 
 export type BusState = IBusState
 
 export interface IState {
-  score: scoreState
+  score: ScoreState
   busses: BusState
   controls: ControlState
 }
