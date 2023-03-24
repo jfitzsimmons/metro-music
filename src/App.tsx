@@ -1,8 +1,8 @@
 import React from 'react'
-import Score from './components/Score/Score'
-import Controls from './components/Controls/Controls'
-import Map from './components/Map/Map'
-import Preview from './components/Preview/Preview'
+import Score from './features/score/Score'
+import Controls from './features/controls/Controls'
+import Map from './features/map/Map'
+// import Preview from './features/preview/Preview'
 import './App.css'
 
 function App() {
@@ -11,7 +11,7 @@ function App() {
       <Score />
       <Controls />
       <Map />
-      <Preview />
+      {/**  <Preview /> */}
     </main>
   )
 }

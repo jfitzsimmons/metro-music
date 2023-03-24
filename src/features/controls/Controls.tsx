@@ -1,8 +1,5 @@
 import React, { ChangeEvent, useEffect } from 'react'
-import { connect } from 'react-redux'
-
-import './Controls.css'
-
+import './controls.css'
 import {
   ImVolumeMedium,
   ImVolumeLow,
@@ -12,48 +9,44 @@ import {
 import { GiMusicalScore } from 'react-icons/gi'
 import { BiArrowToLeft } from 'react-icons/bi'
 import { BsFillPlayFill, BsPauseFill, BsStopFill } from 'react-icons/bs'
+import { useAppSelector, useAppDispatch } from '../../store/hooks'
+
 import { ReactComponent as MetroIcon } from '../../assets/svg/metro.svg'
 import { debounce } from '../../utils/tools'
-import { IState, Progression, TextCue } from '../../store/models'
+import { newTextAdded, scoreVisibilitySet } from '../score/scoreSlice'
 import {
-  chooseProgression,
-  pauseOrchestra,
-  setSignalType,
-  setNewText,
-  setScoreVisibility,
-  setVolume,
-} from '../../store/actions'
+  volumeSet,
+  progressionChosen,
+  orchestraPaused,
+  signalTypeSet,
+} from './controlsSlice'
 
 const datenow = new Date()
 
-function Controls({
-  toggleScore,
-  volume,
-  newVolume,
-  selectedProgression,
-  pause,
-  setPause,
-  scoreIsVisible,
-  addToText,
-  signalType,
-  setHalt, // testjpf overengineered.  just kill processes? have a countdown to when it'll be over!
-}: any) {
+export default function Controls() {
+  const dispatch = useAppDispatch()
+  const { volume, pause, signalType } = useAppSelector(
+    (state) => state.controls,
+  )
+  const { scoreIsVisible } = useAppSelector((state) => state.score)
+
   const delayText = debounce(() => {
     // testjpf loop trhough existing calls and update volume property????
-
-    addToText({
-      id: `volume${Date.now()}`,
-      text: `Volume will be set to ${Math.round(
-        parseFloat(volume) * 100,
-      )}% with the next batch of data.`,
-      class: `controls-change`,
-    })
+    dispatch(
+      newTextAdded({
+        id: `volume${Date.now()}`,
+        text: `Volume will be set to ${Math.round(
+          parseFloat(volume) * 100,
+        )}% with the next batch of data.`,
+        class: `controls-change`,
+      }),
+    )
   }, 500)
 
   function handleVolume(event: ChangeEvent<HTMLInputElement>) {
     if (event.target) {
       const value = event.target.value.toString()
-      newVolume(value)
+      dispatch(volumeSet(value))
     }
   }
 
@@ -62,12 +55,14 @@ function Controls({
       const { options, selectedIndex } = event.target
       const index = event.target.value.toString()
       const label = options[selectedIndex].text
-      selectedProgression({ label, index })
-      addToText({
-        id: `progression${Date.now()}`,
-        text: `${label} will start playing with the next batch of data.`,
-        class: `controls-change`,
-      })
+      dispatch(progressionChosen({ label, index }))
+      dispatch(
+        newTextAdded({
+          id: `progression${Date.now()}`,
+          text: `${label} will start playing with the next batch of data.`,
+          class: `controls-change`,
+        }),
+      )
     }
   }
 
@@ -85,21 +80,24 @@ function Controls({
   }
 
   function handlePlayback() {
-    setPause(pause !== true)
-    addToText({
-      id: `playback${Date.now()}`,
-      text: `The piece will ${
-        pause === false
-          ? 'stop after this batch of data.'
-          : 'begin again shortly.'
-      } `,
-      class: `controls-change`,
-    })
+    dispatch(orchestraPaused(pause !== true))
+    dispatch(
+      newTextAdded({
+        id: `playback${Date.now()}`,
+        text: `The piece will ${
+          pause === false
+            ? 'stop after this batch of data.'
+            : 'begin again shortly.'
+        } `,
+        class: `controls-change`,
+      }),
+    )
   }
 
   useEffect(() => {
-    if (signalType === 'stop' && pause === false) setPause(true)
-  }, [pause, setPause, signalType])
+    if (signalType === 'stop' && pause === false)
+      dispatch(orchestraPaused(true))
+  }, [dispatch, pause, signalType])
 
   return (
     <div
@@ -110,8 +108,8 @@ function Controls({
       <div
         className={`score-toggle ${scoreIsVisible ? 'unflipped' : 'flipped'}`}
       >
-        <BiArrowToLeft onClick={() => toggleScore(!scoreIsVisible)} />
-        <GiMusicalScore onClick={() => toggleScore(!scoreIsVisible)} />
+        <BiArrowToLeft onClick={() => dispatch(scoreVisibilitySet())} />
+        <GiMusicalScore onClick={() => dispatch(scoreVisibilitySet())} />
       </div>
       <div className="controls">
         <div className="controls__buttons">
@@ -126,7 +124,7 @@ function Controls({
           <button
             type="button"
             className="controls__buttons-stop"
-            onMouseUp={() => setHalt('stop')}
+            onMouseUp={() => dispatch(signalTypeSet('stop'))}
           >
             <BsStopFill />
           </button>
@@ -158,12 +156,14 @@ function Controls({
         <div
           className="volume"
           style={{
-            background: `hsla(209, ${Math.round(volume * 100)}%, 20%, .4)`,
+            background: `hsla(209, ${Math.round(
+              parseFloat(volume) * 100,
+            )}%, 20%, .4)`,
           }}
         >
           <div className="volume__amount">
-            {returnVolumeIcon(Math.round(volume * 100))}
-            {Math.round(volume * 100)}%
+            {returnVolumeIcon(Math.round(parseFloat(volume) * 100))}
+            {Math.round(parseFloat(volume) * 100)}%
           </div>
           <input
             type="range"
@@ -191,25 +191,3 @@ function Controls({
     </div>
   )
 }
-
-const mapStateToProps = (state: IState) => {
-  const { score, controls } = state
-  return {
-    scoreIsVisible: score.scoreIsVisible,
-    volume: controls.volume,
-    pause: controls.pause,
-    signalType: controls.signalType,
-  }
-}
-
-const mapDispatchToProps = (dispatch: any) => ({
-  toggleScore: (payload: boolean) => dispatch(setScoreVisibility(payload)),
-  newVolume: (payload: string) => dispatch(setVolume(payload)),
-  setPause: (payload: boolean) => dispatch(pauseOrchestra(payload)),
-  selectedProgression: (payload: Progression) =>
-    dispatch(chooseProgression(payload)),
-  setHalt: (payload: string) => dispatch(setSignalType(payload)),
-  addToText: (payload: TextCue) => dispatch(setNewText(payload)),
-})
-
-export default connect(mapStateToProps, mapDispatchToProps)(Controls)

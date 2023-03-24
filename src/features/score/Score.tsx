@@ -1,10 +1,10 @@
 import React, { memo, useEffect, useRef } from 'react'
-import { connect } from 'react-redux'
 import { BiArrowToLeft } from 'react-icons/bi'
 import { BsMusicNoteBeamed } from 'react-icons/bs'
-import { setScoreVisibility } from '../../store/actions'
-import { IState, TextCue } from '../../store/models'
-import './Score.css'
+import { useAppSelector, useAppDispatch } from '../../store/hooks'
+import { scoreVisibilitySet } from './scoreSlice'
+import { TextCue } from '../../store/models'
+import './score.css'
 import { truncateAfter, truncateBefore, isInViewport } from '../../utils/tools'
 
 const Line = memo(({ text, className }: any) => (
@@ -21,13 +21,10 @@ const Line = memo(({ text, className }: any) => (
   </div>
 ))
 
-function Score(props: {
-  scoreIsVisible: boolean
-  closeScore: () => void
-  textCues: TextCue[]
-}) {
-  const { scoreIsVisible, closeScore, textCues } = props
+export default function Score() {
+  const dispatch = useAppDispatch()
   const bottomRef: { current: HTMLElement | null } = useRef(null)
+  const { textCues, scoreIsVisible } = useAppSelector((state) => state.score)
 
   function renderItems() {
     return (
@@ -59,7 +56,7 @@ function Score(props: {
             <button
               className="score__header__close"
               type="button"
-              onClick={() => closeScore()}
+              onClick={() => dispatch(scoreVisibilitySet())}
             >
               <BiArrowToLeft />
             </button>
@@ -80,17 +77,3 @@ function Score(props: {
     </div>
   )
 }
-
-const mapStateToProps = (state: IState) => {
-  const { score } = state
-  return {
-    scoreIsVisible: score.scoreIsVisible,
-    textCues: score.textCues,
-  }
-}
-
-const mapDispatchToProps = (dispatch: any) => ({
-  closeScore: () => dispatch(setScoreVisibility(false)),
-})
-
-export default connect(mapStateToProps, mapDispatchToProps)(Score)

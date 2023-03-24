@@ -38,15 +38,12 @@ export function isInViewport(element: HTMLElement) {
     rect.right <= (window.innerWidth || document.documentElement.clientWidth)
   )
 }
-
 export const chooseEnvEndpoint = (): any => {
-  if (process.env.REACT_APP_ENVIRONMENT === 'dev') {
-    fetch('/.netlify/functions/metro-updates').then((res) => res.json())
-  } else if (process.env.REACT_APP_ENVIRONMENT === 'prod') {
+  if (process.env.REACT_APP_ENVIRONMENT === 'prod') {
     if (Math.random() > 0.2) {
-      fetch(process.env.REACT_APP_EXT_BUS_API!).then((res) => res.json())
-    } else {
-      fetch(process.env.REACT_APP_INT_BUS_API!).then((res) => res.json())
+      return process.env.REACT_APP_EXT_BUS_API!
     }
+    return process.env.REACT_APP_INT_BUS_API!
   }
+  return process.env.REACT_APP_INT_BUS_API!
 }
