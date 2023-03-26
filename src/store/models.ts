@@ -34,6 +34,7 @@ export interface IBusState {
   placePreviewsIsVisible: boolean
   retiredBusses: Bus[]
   updatedRoutes: Bus[]
+  stationaryBusses: Bus[]
 }
 
 export type BusState = IBusState

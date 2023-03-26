@@ -1,5 +1,6 @@
 import { Octaves } from '../store/models'
 import { rndmRng } from './calculations'
+import { pickOctave } from './waveShaping'
 
 let audioContext = new window.AudioContext()
 
@@ -8,18 +9,19 @@ export function resetAudioContext() {
   audioContext = new window.AudioContext()
 }
 
+// testjpf put these i narp order
 export const progressions = [
   [
-    ['F#', 'E', 'A', 'D'],
-    ['A', 'E', 'B', 'C#'],
-    ['E', 'B', 'F#', 'G#'],
-    ['F#', 'C#', 'E', 'A'],
+    ['D', 'E', 'F#', 'A'],
+    ['B', 'A', 'E', 'C#'],
+    ['E', 'F#', 'G#', 'B'],
+    ['A', 'F#', 'E', 'C#'],
   ],
   [
-    ['C', 'G', 'E', 'A'],
-    ['F', 'A', 'C', 'E'],
-    ['C', 'G', 'E', 'A'],
-    ['G', 'B', 'D', 'F'],
+    ['C', 'E', 'G', 'A'],
+    ['A', 'F', 'E', 'C'],
+    ['C', 'E', 'G', 'A'],
+    ['D', 'F', 'G', 'B'],
   ],
   [
     ['D', 'F', 'G#', 'C'],
@@ -66,7 +68,7 @@ export const progressions = [
   [
     ['F#', 'A', 'C#', 'E'],
     ['E', 'G#', 'B', 'D#'],
-    ['D', 'F#', 'A', 'C#'],
+    ['C#', 'D', 'F#', 'A'],
     ['C#', 'F', 'G#', 'B'],
   ],
 ] as const
@@ -181,6 +183,40 @@ export function playChord(note: number, time: number) {
 
   osc.start(audioContext.currentTime + time)
   osc.stop(audioContext.currentTime + time + 2)
+}
+
+export function playArp(notes: string[], delay: number, noteAmount: number) {
+  // console.log('ARP')
+  type OctaveKey = keyof typeof noteFreq
+  const octave: OctaveKey = pickOctave(Math.round(rndmRng(5, 4)))
+  const octaveNoteFreqs = noteFreq[octave]
+  type ArpNotes = keyof typeof octaveNoteFreqs
+
+  for (let i = noteAmount; i--; ) {
+    const osc: OscillatorNode = audioContext.createOscillator()
+    const gainNode: GainNode = audioContext.createGain()
+    const biquadFilter: BiquadFilterNode = audioContext.createBiquadFilter()
+
+    biquadFilter.type = 'bandpass'
+    biquadFilter.Q.value = 9
+    biquadFilter.frequency.setValueAtTime(190, audioContext.currentTime)
+
+    const note = octaveNoteFreqs[notes[i] as ArpNotes]
+    osc.frequency.value = note
+    // console.log(osc.frequency.value, 'osc.frequency.value')
+    // console.log(i / 8, ' i / 8')
+
+    gainNode.gain.cancelScheduledValues(audioContext.currentTime)
+    gainNode.gain.setValueAtTime(0.4, audioContext.currentTime + delay + i / 6)
+
+    osc
+      .connect(gainNode)
+      .connect(biquadFilter)
+      .connect(audioContext.destination)
+
+    osc.start(audioContext.currentTime + delay + i / 6)
+    osc.stop(audioContext.currentTime + delay + i / 6 + 0.2)
+  }
 }
 
 export function playSweep(sweep: {
