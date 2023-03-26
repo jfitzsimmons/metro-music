@@ -1,5 +1,14 @@
 import { useEffect, useRef } from 'react'
 
+export const partition = (arr: any[], fn: any) =>
+  arr.reduce(
+    (acc, val, i, arr2) => {
+      acc[fn(val, i, arr2) ? 0 : 1].push(val)
+      return acc
+    },
+    [[], []],
+  )
+
 export function debounce<T extends unknown[]>(
   func: (...args: T) => void,
   delay: number,

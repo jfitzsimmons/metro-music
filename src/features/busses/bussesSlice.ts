@@ -1,6 +1,7 @@
 import { createSlice } from '@reduxjs/toolkit'
 import { BusState, Bus } from '../../store/models'
 import { distance } from '../../utils/calculations'
+import { partition } from '../../utils/tools'
 
 const initialState: BusState = {
   busses: [],
@@ -8,6 +9,7 @@ const initialState: BusState = {
   placePreviewsIsVisible: false,
   retiredBusses: [],
   updatedRoutes: [],
+  stationaryBusses: [],
 }
 
 const bussesSlice = createSlice({
@@ -30,6 +32,8 @@ const bussesSlice = createSlice({
           pastBusses[i].id === nextBusses[i2].id ||
           nextBusses.some((b: Bus) => b.id === pastBusses[i].id)
         ) {
+          // testjpf could propbably check if distance is 0 and break
+          // (find way to perform better)
           nextBusses[i2].distance = distance(
             pastBusses[i].latitude,
             pastBusses[i].longitude,
@@ -59,26 +63,22 @@ const bussesSlice = createSlice({
         if (nextBusses[i2 + 1]) i2++
       }
 
-      // testjpf what to do in future? add to state?
-      /** 
-      const unMoved = nextBusses.filter(
-        (vehicle: Bus) => vehicle && vehicle.distance === 0,
+      const partitioned = partition(
+        nextBusses,
+        (b: Bus) => b && b.distance !== 0,
       )
-      console.log('unMoved.length', unMoved.length)
-*/
-      const updatedRoutes = nextBusses
-        .filter((vehicle: Bus) => vehicle && vehicle.distance !== 0)
-        .sort(
+
+      partitioned[0].shift()
+
+      if (partitioned[0] && partitioned[0].length > 0)
+        state.retiredBusses = partitioned[0].sort(
           (x: Bus, y: Bus) =>
             parseInt(x.timestamp, 10) - parseInt(y.timestamp, 10),
         )
-
-      updatedRoutes.shift()
-
-      if (withoutUpdates && withoutUpdates.length > 0)
-        state.retiredBusses = withoutUpdates
       state.updatedRoutes =
-        updatedRoutes && updatedRoutes.length > 0 ? updatedRoutes : []
+        partitioned[0] && partitioned[0].length > 0 ? partitioned[0] : []
+      state.stationaryBusses =
+        partitioned[1] && partitioned[1].length > 0 ? partitioned[1] : []
       state.busses = nextBusses
     },
     selectedBusSet(state, action) {
