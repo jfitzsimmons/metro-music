@@ -10,7 +10,7 @@ import { rndmRng } from '../../utils/calculations'
 import { pickOctave } from '../../utils/waveShaping'
 import { newTextAdded } from '../score/scoreSlice'
 import store from '../../store/store'
-import { findMarker } from '../map/utils'
+import { findMarker, textMarkerTimeouts } from '../map/utils'
 
 export function cleanBusData(entities: any) {
   const cleaned: Bus[] = []
@@ -44,32 +44,36 @@ export function handleStaleVehicles(
       if (note) playChord(noteFreq[octave][note], start * 2)
     }
     const found = findMarker(v.id)
-    setTimeout(() => {
-      if (found && found.current)
-        found.current.setIcon(
-          L.divIcon({
-            iconSize: [40, 40],
-            iconAnchor: [10, 10],
-            popupAnchor: [10, 0],
-            shadowSize: [0, 0],
-            className: `map-icon icon-animation2 map-icon_${v.id}`,
-          }),
-        )
-    }, start * 2 * 1010)
+    if (found && found.current)
+      textMarkerTimeouts.push(
+        setTimeout(() => {
+          found.current!.setIcon(
+            L.divIcon({
+              iconSize: [40, 40],
+              iconAnchor: [10, 10],
+              popupAnchor: [10, 0],
+              shadowSize: [0, 0],
+              className: `map-icon icon-animation2 map-icon_${v.id}`,
+            }),
+          )
+        }, start * 2 * 1010),
+      )
   })
 
-  setTimeout(
-    () =>
-      store.dispatch(
-        newTextAdded({
-          id: `retired${Date.now()}`,
-          text: `${noMoves.length} ${
-            noMoves.length === 1 ? 'bus is' : 'busses are'
-          } without updates`,
-          class: `retired`,
-        }),
-      ),
-    start * 2 * 1000,
+  textMarkerTimeouts.push(
+    setTimeout(
+      () =>
+        store.dispatch(
+          newTextAdded({
+            id: `retired${Date.now()}`,
+            text: `${noMoves.length} ${
+              noMoves.length === 1 ? 'bus is' : 'busses are'
+            } without updates`,
+            class: `retired`,
+          }),
+        ),
+      start * 2 * 1000,
+    ),
   )
 }
 
@@ -85,9 +89,9 @@ export function playStationaryBusses(
   noMoves.forEach((b: Bus) => {
     const found = findMarker(b.id)
     if (found && found.current) {
-      setTimeout(() => {
-        if (found && found.current)
-          found.current.setIcon(
+      textMarkerTimeouts.push(
+        setTimeout(() => {
+          found.current!.setIcon(
             L.divIcon({
               iconSize: [40, 40],
               iconAnchor: [10, 10],
@@ -96,23 +100,26 @@ export function playStationaryBusses(
               className: `map-icon icon-animation3 map-icon_${b.id}`,
             }),
           )
-      }, 8100 + Math.round(rndmRng(900, -300)))
+        }, 8100 + Math.round(rndmRng(800, -200))),
+      )
     }
   })
 
   playArp(arpnotes, 8, amount)
 
-  setTimeout(
-    () =>
-      store.dispatch(
-        newTextAdded({
-          id: `stationary${Date.now()}`,
-          text: `${noMoves.length} ${
-            noMoves.length === 1 ? 'bus has' : 'busses have'
-          } not moved`,
-          class: `retired`,
-        }),
-      ),
-    8300,
+  textMarkerTimeouts.push(
+    setTimeout(
+      () =>
+        store.dispatch(
+          newTextAdded({
+            id: `stationary${Date.now()}`,
+            text: `${noMoves.length} ${
+              noMoves.length === 1 ? 'bus has' : 'busses have'
+            } not moved`,
+            class: `retired`,
+          }),
+        ),
+      8300,
+    ),
   )
 }

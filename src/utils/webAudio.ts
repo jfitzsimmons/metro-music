@@ -9,7 +9,6 @@ export function resetAudioContext() {
   audioContext = new window.AudioContext()
 }
 
-// testjpf put these i narp order
 export const progressions = [
   [
     ['D', 'E', 'F#', 'A'],
@@ -24,52 +23,52 @@ export const progressions = [
     ['D', 'F', 'G', 'B'],
   ],
   [
-    ['D', 'F', 'G#', 'C'],
-    ['D', 'F', 'G#', 'B'],
+    ['C', 'D', 'F', 'G#'],
+    ['B', 'G#', 'F', 'D'],
     ['C', 'D#', 'G', 'B'],
-    ['C', 'D#', 'G', 'A'],
+    ['A', 'G', 'D#', 'C'],
   ],
   [
-    ['B', 'G', 'F#', 'D'],
-    ['E', 'B', 'G', 'D'],
-    ['E', 'C', 'B', 'G'],
-    ['A', 'F#', 'C', 'D'],
-  ],
-  [
-    ['A', 'E', 'C', 'G#'],
-    ['E', 'B', 'G#', 'D'],
-    ['G', 'D', 'B', 'F#'],
-    ['D', 'A', 'C#', 'F#'],
-  ],
-  [
-    ['B', 'F#', 'D', 'A'],
-    ['F#', 'C#', 'A', 'E'],
-    ['G', 'B', 'D', 'F#'],
-    ['E', 'B', 'D', 'G'],
-  ],
-  [
-    ['G#', 'C', 'D#', 'G'],
-    ['A', 'D', 'A#', 'F'],
-    ['G', 'A#', 'D', 'F'],
-    ['G', 'A#', 'D', 'E'],
-  ],
-  [
-    ['D#', 'G', 'A#', 'D'],
-    ['D', 'F', 'A', 'C'],
-    ['G', 'B', 'D', 'F#'],
-    ['G', 'B', 'D', 'E'],
-  ],
-  [
-    ['A', 'C', 'E', 'G'],
-    ['F', 'G#', 'C', 'D#'],
+    ['D', 'F#', 'G', 'B'],
+    ['B', 'G', 'E', 'D'],
     ['C', 'E', 'G', 'B'],
-    ['G', 'B', 'D', 'F#'],
+    ['A', 'F#', 'D', 'C'],
   ],
   [
-    ['F#', 'A', 'C#', 'E'],
-    ['E', 'G#', 'B', 'D#'],
+    ['C', 'E', 'G#', 'A'],
+    ['B', 'G#', 'E', 'D'],
+    ['D', 'F#', 'G', 'B'],
+    ['A', 'F#', 'D', 'C#'],
+  ],
+  [
+    ['D', 'F#', 'A', 'B'],
+    ['A', 'F#', 'E', 'C#'],
+    ['D', 'F#', 'G', 'B'],
+    ['B', 'G', 'E', 'D'],
+  ],
+  [
+    ['C', 'D#', 'G', 'G#'],
+    ['A#', 'A', 'F', 'D'],
+    ['D', 'F', 'G', 'A#'],
+    ['A#', 'G', 'E', 'D'],
+  ],
+  [
+    ['D', 'D#', 'G', 'A#'],
+    ['A', 'F', 'D', 'C'],
+    ['D', 'F#', 'G', 'B'],
+    ['B', 'G', 'E', 'D'],
+  ],
+  [
+    ['C', 'E', 'G', 'A'],
+    ['G#', 'F', 'D#', 'C'],
+    ['C', 'E', 'G', 'B'],
+    ['B', 'G', 'F#', 'D'],
+  ],
+  [
+    ['C#', 'E', 'F#', 'A'],
+    ['B', 'G#', 'E', 'D#'],
     ['C#', 'D', 'F#', 'A'],
-    ['C#', 'F', 'G#', 'B'],
+    ['B', 'G#', 'F', 'C#'],
   ],
 ] as const
 
@@ -175,7 +174,7 @@ export function playChord(note: number, time: number) {
   gainNode.gain.setValueAtTime(0, audioContext.currentTime + time)
   gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + time)
   gainNode.gain.linearRampToValueAtTime(
-    0.3,
+    0.25,
     audioContext.currentTime + time + 2,
   )
 
@@ -186,7 +185,6 @@ export function playChord(note: number, time: number) {
 }
 
 export function playArp(notes: string[], delay: number, noteAmount: number) {
-  // console.log('ARP')
   type OctaveKey = keyof typeof noteFreq
   const octave: OctaveKey = pickOctave(Math.round(rndmRng(5, 4)))
   const octaveNoteFreqs = noteFreq[octave]
@@ -203,11 +201,9 @@ export function playArp(notes: string[], delay: number, noteAmount: number) {
 
     const note = octaveNoteFreqs[notes[i] as ArpNotes]
     osc.frequency.value = note
-    // console.log(osc.frequency.value, 'osc.frequency.value')
-    // console.log(i / 8, ' i / 8')
 
     gainNode.gain.cancelScheduledValues(audioContext.currentTime)
-    gainNode.gain.setValueAtTime(0.4, audioContext.currentTime + delay + i / 6)
+    gainNode.gain.setValueAtTime(0.33, audioContext.currentTime + delay + i / 6)
 
     osc
       .connect(gainNode)

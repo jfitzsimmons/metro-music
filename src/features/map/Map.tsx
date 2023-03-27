@@ -16,7 +16,7 @@ import { useAppSelector, useAppDispatch } from '../../store/hooks'
 import { allBussesSet } from '../busses/bussesSlice'
 import { newTextAdded } from '../score/scoreSlice'
 import { freshRenderSet, signalTypeSet } from '../controls/controlsSlice'
-import { markerRefs, findMarker } from './utils'
+import { markerRefs, findMarker, textMarkerTimeouts, getChord } from './utils'
 import {
   cleanBusData,
   handleStaleVehicles,
@@ -24,8 +24,6 @@ import {
 } from '../busses/utils'
 
 let longAvg = -90.28392791748047
-let progress = 0
-let multiplier = 0
 let chord = 0
 let start = 0
 let concertStart = 0
@@ -128,14 +126,7 @@ export default function Map() {
       let count = 1
 
       if (concertStart === 0) concertStart = batchStart
-      // testjpf make a function that returns an object.
-      progress = parseInt(routes[0].timestamp, 10) - concertStart // play time in current batch
-      multiplier = Math.floor(progress / 8) // helps narrow scope to single measure
-      // narrow scope to a single chord in progression
-      chord =
-        progress >= 8
-          ? Math.floor((progress - 8 * multiplier) / 2)
-          : Math.floor(progress / 2)
+      chord = getChord(parseInt(routes[0].timestamp, 10) - concertStart)
 
       if (retiredBusses.length > 0)
         handleStaleVehicles(retiredBusses, progression.index, chord)
@@ -143,14 +134,7 @@ export default function Map() {
         playStationaryBusses(stationaryBusses, progression.index, chord)
 
       routes.forEach((r: Bus, i: number) => {
-        // use with new function
-        progress = parseInt(r.timestamp, 10) - concertStart // play time in current batch
-        multiplier = Math.floor(progress / 8) // helps narrow scope to single measure
-        // narrow scope to a single chord in progression
-        chord =
-          progress >= 8
-            ? Math.floor((progress - 8 * multiplier) / 2)
-            : Math.floor(progress / 2)
+        chord = getChord(parseInt(r.timestamp, 10) - concertStart)
 
         type OctaveKey = keyof typeof noteFreq
         const octave: OctaveKey = pickOctaveByLat(r.latitude)
@@ -172,40 +156,38 @@ export default function Map() {
         }
 
         let end: number = 0
-        let adsr: number = 0
         if (r && r.distance) end = r.distance < 0.05 ? 0.05 : r.distance
-        end *= 10
-        if (end > 4) end = 4
-        if (r && r.mph) adsr = getAdsr(r.mph)
+        end = end * 10 > 4 ? 4 : end * 10
+        const adsr = r && r.mph ? getAdsr(r.mph) : 0
         if (r.latitude > 38.66) longAvg = -90.3517098
         const pan =
           (Math.abs(longAvg) - Math.abs(r.longitude)) * 6 * (octave * 0.15)
-
         const found = findMarker(r.id)
-        // testjpf need to track timeout and clear on abort!
-        // push to an array, etc...
-        setTimeout(() => {
-          if (found && found.current) {
-            found.current.setIcon(
-              L.divIcon({
-                iconSize: [40, 40],
-                iconAnchor: [10, 10],
-                popupAnchor: [10, 0],
-                shadowSize: [0, 0],
-                className: `map-icon icon-animation map-icon_${r.id}`,
+
+        textMarkerTimeouts.push(
+          setTimeout(() => {
+            if (found && found.current) {
+              found.current.setIcon(
+                L.divIcon({
+                  iconSize: [40, 40],
+                  iconAnchor: [10, 10],
+                  popupAnchor: [10, 0],
+                  shadowSize: [0, 0],
+                  className: `map-icon icon-animation map-icon_${r.id}`,
+                }),
+              )
+            }
+            dispatch(
+              newTextAdded({
+                id: `${r.id}${i}${start}${end}${Date.now()}`,
+                text: `${r.label} ~ is playing ${note}${octave} for ${(
+                  end * 2
+                ).toFixed(3)} beats`,
+                class: `vehicle`,
               }),
             )
-          }
-          dispatch(
-            newTextAdded({
-              id: `${r.id}${i}${start}${end}${Date.now()}`,
-              text: `${r.label} ~ is playing ${note}${octave} for ${(
-                end * 2
-              ).toFixed(3)} beats`,
-              class: `vehicle`,
-            }),
-          )
-        }, start * 1000)
+          }, start * 1000),
+        )
 
         const sweep = {
           volume,
@@ -221,7 +203,7 @@ export default function Map() {
       })
 
       const endTime: number =
-        (parseInt(routes[routes.length - 1].timestamp, 10) - batchStart + 1) *
+        (parseInt(routes[routes.length - 1].timestamp, 10) - batchStart + 0.3) *
         1000
       return endTime // when batch will be done
     },
@@ -281,19 +263,7 @@ export default function Map() {
     )
     dispatch(signalTypeSet('interrupt'))
   }, [dispatch, loadNewData])
-  /**
-  useEffect(() => {
-    if (retiredBusses && retiredBusses.length > 0) {
-      handleStaleVehicles(concertStart, retiredBusses, progression.index)
-    }
-  }, [progression.index, retiredBusses])
 
-  useEffect(() => {
-    if (stationaryBusses && stationaryBusses.length > 0) {
-      playStationaryBusses(concertStart, stationaryBusses, progression.index)
-    }
-  }, [progression.index, stationaryBusses])
- */
   useEffect(() => {
     // 1st data load to get busses
     if (
@@ -305,14 +275,13 @@ export default function Map() {
   }, [beginPiece, freshRender, pause, prevFreshRender])
 
   useEffect(() => {
-    // testjpf, may be able to clean up conditionals with new slice logic
     if (
       updatedRoutes &&
       updatedRoutes.length > 0 &&
+      busses !== prevBusses &&
       prevBusses &&
       prevBusses.length > 0 &&
       !pause &&
-      busses !== prevBusses &&
       prevFreshRender === false &&
       freshRender === false
     ) {
@@ -325,10 +294,10 @@ export default function Map() {
     } else if (
       updatedRoutes &&
       updatedRoutes.length === 0 &&
+      busses !== prevBusses &&
       prevBusses &&
       prevBusses.length > 0 &&
       !pause &&
-      busses !== prevBusses &&
       prevFreshRender === false &&
       freshRender === false
     ) {
@@ -347,6 +316,9 @@ export default function Map() {
       // hard reset
       if (timeout && timeout.current) clearTimeout(timeout.current)
       resetAudioContext()
+      for (let i = textMarkerTimeouts.length; i--; ) {
+        clearTimeout(textMarkerTimeouts[i])
+      }
       dispatch(signalTypeSet(null))
       dispatch(freshRenderSet(null))
     } else if (

@@ -38,7 +38,7 @@
 
 .icon-animation3 {
   animation-name: stopped;
-  animation-duration: 1s;
+  animation-duration: 0.9s;
   animation-timing-function: ease;
   animation-fill-mode: forwards;
 }
@@ -74,10 +74,11 @@
 }
 
 @keyframes retire {
-  10% {
+  60% {
     filter: saturate(900%);
+    background-color: rgba(242, 179, 4, 1);
   }
-  70% {
+  80% {
     filter: saturate(0);
   }
   100% {

@@ -31,7 +31,6 @@ export default function Controls() {
   const { scoreIsVisible } = useAppSelector((state) => state.score)
 
   const delayText = debounce(() => {
-    // testjpf loop trhough existing calls and update volume property????
     dispatch(
       newTextAdded({
         id: `volume${Date.now()}`,
