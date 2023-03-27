@@ -32,8 +32,6 @@ const bussesSlice = createSlice({
           pastBusses[i].id === nextBusses[i2].id ||
           nextBusses.some((b: Bus) => b.id === pastBusses[i].id)
         ) {
-          // testjpf could propbably check if distance is 0 and break
-          // (find way to perform better)
           nextBusses[i2].distance = distance(
             pastBusses[i].latitude,
             pastBusses[i].longitude,
