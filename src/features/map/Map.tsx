@@ -7,82 +7,26 @@ import {
   noteFreq,
   resetAudioContext,
   progressions,
-  playChord,
 } from '../../utils/webAudio'
 import { countBy, rndmRng } from '../../utils/calculations'
-import { getAdsr, pickOctaveByLat, pickOctave } from '../../utils/waveShaping'
+import { getAdsr, pickOctaveByLat } from '../../utils/waveShaping'
 import { usePrevious, chooseEnvEndpoint } from '../../utils/tools'
 import './map.css'
-import store from '../../store/store'
 import { useAppSelector, useAppDispatch } from '../../store/hooks'
 import { allBussesSet } from '../busses/bussesSlice'
 import { newTextAdded } from '../score/scoreSlice'
 import { freshRenderSet, signalTypeSet } from '../controls/controlsSlice'
+import { markerRefs, findMarker, textMarkerTimeouts, getChord } from './utils'
+import {
+  cleanBusData,
+  handleStaleVehicles,
+  playStationaryBusses,
+} from '../busses/utils'
 
-const markerRefs: React.RefObject<L.Marker>[] = []
 let longAvg = -90.28392791748047
-let progress = 0
-let multiplier = 0
 let chord = 0
 let start = 0
 let concertStart = 0
-
-const cleanBusData = (entities: any) => {
-  const cleaned: Bus[] = []
-  entities.forEach((e: any) => {
-    cleaned.push({
-      id: e.vehicle.vehicle.id,
-      latitude: e.vehicle.position.latitude,
-      longitude: e.vehicle.position.longitude,
-      timestamp: e.vehicle.timestamp,
-      label: e.vehicle.vehicle.label,
-    })
-  })
-
-  return cleaned
-}
-
-const findMarker = (id: string) =>
-  markerRefs.find(
-    (m) =>
-      m.current &&
-      m.current.options &&
-      m.current.options.icon &&
-      m.current.options.icon.options &&
-      m.current.options.icon.options.className &&
-      m.current.options.icon.options.className.includes(`map-icon_${id}`),
-  )
-
-function handleStaleVehicles(noMoves: Bus[], prog: number) {
-  const currentProgress = Math.round(Date.now() / 1000) - concertStart
-  const delay =
-    currentProgress < 7 ? 7 - currentProgress : 8 - ((currentProgress % 8) + 1)
-
-  noMoves.forEach((v, i) => {
-    if (i < 4) {
-      type OctaveKey = keyof typeof noteFreq
-      const octave: OctaveKey = pickOctave(6 - i)
-      const octaveNoteFreqs = noteFreq[octave]
-      type NoteKey = keyof typeof octaveNoteFreqs
-      const note: NoteKey = progressions[prog][3][Math.round(rndmRng(3, 0))]
-      if (note) playChord(noteFreq[octave][note], delay)
-    }
-  })
-
-  setTimeout(
-    () =>
-      store.dispatch(
-        newTextAdded({
-          id: `retired${Date.now()}`,
-          text: `${noMoves.length} ${
-            noMoves.length === 1 ? 'bus is' : 'busses are'
-          } without updates`,
-          class: `retired`,
-        }),
-      ),
-    delay * 1000,
-  )
-}
 
 const BusMarker = memo(({ place, selectedBus, showPreview }: any) => {
   const newRef = createRef<L.Marker>()
@@ -110,9 +54,8 @@ const BusMarker = memo(({ place, selectedBus, showPreview }: any) => {
 
 export default function Map() {
   const dispatch = useAppDispatch()
-  const { busses, retiredBusses, updatedRoutes } = useAppSelector(
-    (state) => state.busses,
-  )
+  const { busses, retiredBusses, updatedRoutes, stationaryBusses } =
+    useAppSelector((state) => state.busses)
   const { volume, pause, signalType, freshRender, progression } =
     useAppSelector((state) => state.controls)
   const timeout: { current: NodeJS.Timeout | null } = useRef(null)
@@ -183,15 +126,15 @@ export default function Map() {
       let count = 1
 
       if (concertStart === 0) concertStart = batchStart
+      chord = getChord(parseInt(routes[0].timestamp, 10) - concertStart)
+
+      if (retiredBusses.length > 0)
+        handleStaleVehicles(retiredBusses, progression.index, chord)
+      if (stationaryBusses.length > 0)
+        playStationaryBusses(stationaryBusses, progression.index, chord)
 
       routes.forEach((r: Bus, i: number) => {
-        progress = parseInt(r.timestamp, 10) - concertStart // play time in current batch
-        multiplier = Math.floor(progress / 8) // helps narrow scope to single measure
-        // narrow scope to a single chord in progression
-        chord =
-          progress >= 8
-            ? Math.floor((progress - 8 * multiplier) / 2)
-            : Math.floor(progress / 2)
+        chord = getChord(parseInt(r.timestamp, 10) - concertStart)
 
         type OctaveKey = keyof typeof noteFreq
         const octave: OctaveKey = pickOctaveByLat(r.latitude)
@@ -213,40 +156,38 @@ export default function Map() {
         }
 
         let end: number = 0
-        let adsr: number = 0
         if (r && r.distance) end = r.distance < 0.05 ? 0.05 : r.distance
-        end *= 10
-        if (end > 4) end = 4
-        if (r && r.mph) adsr = getAdsr(r.mph)
+        end = end * 10 > 4 ? 4 : end * 10
+        const adsr = r && r.mph ? getAdsr(r.mph) : 0
         if (r.latitude > 38.66) longAvg = -90.3517098
         const pan =
           (Math.abs(longAvg) - Math.abs(r.longitude)) * 6 * (octave * 0.15)
-
         const found = findMarker(r.id)
-        // testjpf need to track timeout and clear on abort!
-        // push to an array, etc...
-        setTimeout(() => {
-          if (found && found.current) {
-            found.current.setIcon(
-              L.divIcon({
-                iconSize: [40, 40],
-                iconAnchor: [10, 10],
-                popupAnchor: [10, 0],
-                shadowSize: [0, 0],
-                className: `map-icon icon-animation map-icon_${r.id}`,
+
+        textMarkerTimeouts.push(
+          setTimeout(() => {
+            if (found && found.current) {
+              found.current.setIcon(
+                L.divIcon({
+                  iconSize: [40, 40],
+                  iconAnchor: [10, 10],
+                  popupAnchor: [10, 0],
+                  shadowSize: [0, 0],
+                  className: `map-icon icon-animation map-icon_${r.id}`,
+                }),
+              )
+            }
+            dispatch(
+              newTextAdded({
+                id: `${r.id}${i}${start}${end}${Date.now()}`,
+                text: `${r.label} ~ is playing ${note}${octave} for ${(
+                  end * 2
+                ).toFixed(3)} beats`,
+                class: `vehicle`,
               }),
             )
-          }
-          dispatch(
-            newTextAdded({
-              id: `${r.id}${i}${start}${end}${Date.now()}`,
-              text: `${r.label} ~ is playing ${note}${octave} for ${(
-                end * 2
-              ).toFixed(3)} beats`,
-              class: `vehicle`,
-            }),
-          )
-        }, start * 1000)
+          }, start * 1000),
+        )
 
         const sweep = {
           volume,
@@ -262,10 +203,18 @@ export default function Map() {
       })
 
       const endTime: number =
-        (parseInt(routes[routes.length - 1].timestamp, 10) - batchStart) * 1000
+        (parseInt(routes[routes.length - 1].timestamp, 10) - batchStart + 0.3) *
+        1000
       return endTime // when batch will be done
     },
-    [countDown, dispatch, progression.index, volume],
+    [
+      countDown,
+      dispatch,
+      progression.index,
+      retiredBusses,
+      stationaryBusses,
+      volume,
+    ],
   )
 
   const loadNewData = useCallback(
@@ -296,8 +245,8 @@ export default function Map() {
           })()
         }, timer)
       } else {
-        dispatch(freshRenderSet(true))
-        allBussesSet([])
+        dispatch(freshRenderSet(null))
+        dispatch(allBussesSet([]))
       }
     },
     [countDown, dispatch],
@@ -312,14 +261,8 @@ export default function Map() {
         class: `loading`,
       }),
     )
-    signalTypeSet('interrupt')
+    dispatch(signalTypeSet('interrupt'))
   }, [dispatch, loadNewData])
-
-  useEffect(() => {
-    if (retiredBusses && retiredBusses.length > 0) {
-      handleStaleVehicles(retiredBusses, progression.index)
-    }
-  }, [progression.index, retiredBusses])
 
   useEffect(() => {
     // 1st data load to get busses
@@ -332,14 +275,13 @@ export default function Map() {
   }, [beginPiece, freshRender, pause, prevFreshRender])
 
   useEffect(() => {
-    // testjpf, may be able to clean up conditionals with new slice logic
     if (
       updatedRoutes &&
       updatedRoutes.length > 0 &&
+      busses !== prevBusses &&
       prevBusses &&
       prevBusses.length > 0 &&
       !pause &&
-      busses !== prevBusses &&
       prevFreshRender === false &&
       freshRender === false
     ) {
@@ -352,10 +294,10 @@ export default function Map() {
     } else if (
       updatedRoutes &&
       updatedRoutes.length === 0 &&
+      busses !== prevBusses &&
       prevBusses &&
       prevBusses.length > 0 &&
       !pause &&
-      busses !== prevBusses &&
       prevFreshRender === false &&
       freshRender === false
     ) {
@@ -374,12 +316,14 @@ export default function Map() {
       // hard reset
       if (timeout && timeout.current) clearTimeout(timeout.current)
       resetAudioContext()
-      signalTypeSet(null)
-      if (!pause) signalTypeSet(null)
+      for (let i = textMarkerTimeouts.length; i--; ) {
+        clearTimeout(textMarkerTimeouts[i])
+      }
+      dispatch(signalTypeSet(null))
       dispatch(freshRenderSet(null))
     } else if (
       signalType === 'interrupt' &&
-      !pause &&
+      pause === false &&
       prevPause === true &&
       prevFreshRender !== null
     ) {
@@ -444,6 +388,16 @@ export default function Map() {
         {busses &&
           busses.length > 0 &&
           busses.map((place: Bus) => (
+            <BusMarker
+              key={place.id}
+              place={place}
+              //  showPreview={showPreview}
+              //  selectedBus={selectedBus}
+            />
+          ))}
+        {retiredBusses &&
+          retiredBusses.length > 0 &&
+          retiredBusses.map((place: Bus) => (
             <BusMarker
               key={place.id}
               place={place}

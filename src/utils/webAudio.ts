@@ -1,5 +1,6 @@
 import { Octaves } from '../store/models'
 import { rndmRng } from './calculations'
+import { pickOctave } from './waveShaping'
 
 let audioContext = new window.AudioContext()
 
@@ -10,64 +11,64 @@ export function resetAudioContext() {
 
 export const progressions = [
   [
-    ['F#', 'E', 'A', 'D'],
-    ['A', 'E', 'B', 'C#'],
-    ['E', 'B', 'F#', 'G#'],
-    ['F#', 'C#', 'E', 'A'],
+    ['D', 'E', 'F#', 'A'],
+    ['B', 'A', 'E', 'C#'],
+    ['E', 'F#', 'G#', 'B'],
+    ['A', 'F#', 'E', 'C#'],
   ],
   [
-    ['C', 'G', 'E', 'A'],
-    ['F', 'A', 'C', 'E'],
-    ['C', 'G', 'E', 'A'],
-    ['G', 'B', 'D', 'F'],
+    ['C', 'E', 'G', 'A'],
+    ['A', 'F', 'E', 'C'],
+    ['C', 'E', 'G', 'A'],
+    ['D', 'F', 'G', 'B'],
   ],
   [
-    ['D', 'F', 'G#', 'C'],
-    ['D', 'F', 'G#', 'B'],
+    ['C', 'D', 'F', 'G#'],
+    ['B', 'G#', 'F', 'D'],
     ['C', 'D#', 'G', 'B'],
-    ['C', 'D#', 'G', 'A'],
+    ['A', 'G', 'D#', 'C'],
   ],
   [
-    ['B', 'G', 'F#', 'D'],
-    ['E', 'B', 'G', 'D'],
-    ['E', 'C', 'B', 'G'],
-    ['A', 'F#', 'C', 'D'],
-  ],
-  [
-    ['A', 'E', 'C', 'G#'],
-    ['E', 'B', 'G#', 'D'],
-    ['G', 'D', 'B', 'F#'],
-    ['D', 'A', 'C#', 'F#'],
-  ],
-  [
-    ['B', 'F#', 'D', 'A'],
-    ['F#', 'C#', 'A', 'E'],
-    ['G', 'B', 'D', 'F#'],
-    ['E', 'B', 'D', 'G'],
-  ],
-  [
-    ['G#', 'C', 'D#', 'G'],
-    ['A', 'D', 'A#', 'F'],
-    ['G', 'A#', 'D', 'F'],
-    ['G', 'A#', 'D', 'E'],
-  ],
-  [
-    ['D#', 'G', 'A#', 'D'],
-    ['D', 'F', 'A', 'C'],
-    ['G', 'B', 'D', 'F#'],
-    ['G', 'B', 'D', 'E'],
-  ],
-  [
-    ['A', 'C', 'E', 'G'],
-    ['F', 'G#', 'C', 'D#'],
+    ['D', 'F#', 'G', 'B'],
+    ['B', 'G', 'E', 'D'],
     ['C', 'E', 'G', 'B'],
-    ['G', 'B', 'D', 'F#'],
+    ['A', 'F#', 'D', 'C'],
   ],
   [
-    ['F#', 'A', 'C#', 'E'],
-    ['E', 'G#', 'B', 'D#'],
-    ['D', 'F#', 'A', 'C#'],
-    ['C#', 'F', 'G#', 'B'],
+    ['C', 'E', 'G#', 'A'],
+    ['B', 'G#', 'E', 'D'],
+    ['D', 'F#', 'G', 'B'],
+    ['A', 'F#', 'D', 'C#'],
+  ],
+  [
+    ['D', 'F#', 'A', 'B'],
+    ['A', 'F#', 'E', 'C#'],
+    ['D', 'F#', 'G', 'B'],
+    ['B', 'G', 'E', 'D'],
+  ],
+  [
+    ['C', 'D#', 'G', 'G#'],
+    ['A#', 'A', 'F', 'D'],
+    ['D', 'F', 'G', 'A#'],
+    ['A#', 'G', 'E', 'D'],
+  ],
+  [
+    ['D', 'D#', 'G', 'A#'],
+    ['A', 'F', 'D', 'C'],
+    ['D', 'F#', 'G', 'B'],
+    ['B', 'G', 'E', 'D'],
+  ],
+  [
+    ['C', 'E', 'G', 'A'],
+    ['G#', 'F', 'D#', 'C'],
+    ['C', 'E', 'G', 'B'],
+    ['B', 'G', 'F#', 'D'],
+  ],
+  [
+    ['C#', 'E', 'F#', 'A'],
+    ['B', 'G#', 'E', 'D#'],
+    ['C#', 'D', 'F#', 'A'],
+    ['B', 'G#', 'F', 'C#'],
   ],
 ] as const
 
@@ -173,7 +174,7 @@ export function playChord(note: number, time: number) {
   gainNode.gain.setValueAtTime(0, audioContext.currentTime + time)
   gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + time)
   gainNode.gain.linearRampToValueAtTime(
-    0.3,
+    0.25,
     audioContext.currentTime + time + 2,
   )
 
@@ -181,6 +182,37 @@ export function playChord(note: number, time: number) {
 
   osc.start(audioContext.currentTime + time)
   osc.stop(audioContext.currentTime + time + 2)
+}
+
+export function playArp(notes: string[], delay: number, noteAmount: number) {
+  type OctaveKey = keyof typeof noteFreq
+  const octave: OctaveKey = pickOctave(Math.round(rndmRng(5, 4)))
+  const octaveNoteFreqs = noteFreq[octave]
+  type ArpNotes = keyof typeof octaveNoteFreqs
+
+  for (let i = noteAmount; i--; ) {
+    const osc: OscillatorNode = audioContext.createOscillator()
+    const gainNode: GainNode = audioContext.createGain()
+    const biquadFilter: BiquadFilterNode = audioContext.createBiquadFilter()
+
+    biquadFilter.type = 'bandpass'
+    biquadFilter.Q.value = 9
+    biquadFilter.frequency.setValueAtTime(190, audioContext.currentTime)
+
+    const note = octaveNoteFreqs[notes[i] as ArpNotes]
+    osc.frequency.value = note
+
+    gainNode.gain.cancelScheduledValues(audioContext.currentTime)
+    gainNode.gain.setValueAtTime(0.33, audioContext.currentTime + delay + i / 6)
+
+    osc
+      .connect(gainNode)
+      .connect(biquadFilter)
+      .connect(audioContext.destination)
+
+    osc.start(audioContext.currentTime + delay + i / 6)
+    osc.stop(audioContext.currentTime + delay + i / 6 + 0.2)
+  }
 }
 
 export function playSweep(sweep: {
@@ -197,8 +229,11 @@ export function playSweep(sweep: {
   const biquadFilter: BiquadFilterNode = audioContext.createBiquadFilter()
 
   if (sweep.freq < 600) {
-    const cut = (426 - Math.abs(sweep.freq - 175)) * 0.0007
+    const cut = (426 - Math.abs(sweep.freq - 175)) * 0.00065
     sweep.volume = (parseFloat(sweep.volume) - cut).toString()
+    if (sweep.freq < 200 && sweep.freq > 175) {
+      sweep.volume = (parseFloat(sweep.volume) * 0.3).toString()
+    }
   }
 
   biquadFilter.type = 'bandpass'
