@@ -1,4 +1,5 @@
 import { Bus } from 'store/models'
+import L from 'leaflet'
 import {
   noteFreq,
   progressions,
@@ -9,6 +10,7 @@ import { rndmRng } from '../../utils/calculations'
 import { pickOctave } from '../../utils/waveShaping'
 import { newTextAdded } from '../score/scoreSlice'
 import store from '../../store/store'
+import { findMarker } from '../map/utils'
 
 export function cleanBusData(entities: any) {
   const cleaned: Bus[] = []
@@ -41,6 +43,19 @@ export function handleStaleVehicles(
       const note: NoteKey = progressions[prog][3][Math.round(rndmRng(3, 0))]
       if (note) playChord(noteFreq[octave][note], start * 2)
     }
+    const found = findMarker(v.id)
+    setTimeout(() => {
+      if (found && found.current)
+        found.current.setIcon(
+          L.divIcon({
+            iconSize: [40, 40],
+            iconAnchor: [10, 10],
+            popupAnchor: [10, 0],
+            shadowSize: [0, 0],
+            className: `map-icon icon-animation2 map-icon_${v.id}`,
+          }),
+        )
+    }, start * 2 * 1010)
   })
 
   setTimeout(
@@ -67,6 +82,24 @@ export function playStationaryBusses(
   const amount =
     Math.round(noMoves.length / 10) > 4 ? 4 : Math.round(noMoves.length / 10)
 
+  noMoves.forEach((b: Bus) => {
+    const found = findMarker(b.id)
+    if (found && found.current) {
+      setTimeout(() => {
+        if (found && found.current)
+          found.current.setIcon(
+            L.divIcon({
+              iconSize: [40, 40],
+              iconAnchor: [10, 10],
+              popupAnchor: [10, 0],
+              shadowSize: [0, 0],
+              className: `map-icon icon-animation3 map-icon_${b.id}`,
+            }),
+          )
+      }, 8100 + Math.round(rndmRng(900, -300)))
+    }
+  })
+
   playArp(arpnotes, 8, amount)
 
   setTimeout(
@@ -80,6 +113,6 @@ export function playStationaryBusses(
           class: `retired`,
         }),
       ),
-    8000,
+    8300,
   )
 }

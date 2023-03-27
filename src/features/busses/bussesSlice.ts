@@ -67,14 +67,15 @@ const bussesSlice = createSlice({
         nextBusses,
         (b: Bus) => b && b.distance !== 0,
       )
-
-      partitioned[0].shift()
-
-      if (partitioned[0] && partitioned[0].length > 0)
-        state.retiredBusses = partitioned[0].sort(
+      partitioned[0]
+        .sort(
           (x: Bus, y: Bus) =>
             parseInt(x.timestamp, 10) - parseInt(y.timestamp, 10),
         )
+        .shift()
+
+      state.retiredBusses =
+        withoutUpdates && withoutUpdates.length > 0 ? withoutUpdates : []
       state.updatedRoutes =
         partitioned[0] && partitioned[0].length > 0 ? partitioned[0] : []
       state.stationaryBusses =

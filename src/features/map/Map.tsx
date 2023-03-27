@@ -423,6 +423,16 @@ export default function Map() {
               //  selectedBus={selectedBus}
             />
           ))}
+        {retiredBusses &&
+          retiredBusses.length > 0 &&
+          retiredBusses.map((place: Bus) => (
+            <BusMarker
+              key={place.id}
+              place={place}
+              //  showPreview={showPreview}
+              //  selectedBus={selectedBus}
+            />
+          ))}
       </MapContainer>
     </div>
   )
