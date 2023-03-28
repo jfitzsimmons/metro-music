@@ -13,7 +13,7 @@ import { getAdsr, pickOctaveByLat } from '../../utils/waveShaping'
 import { usePrevious, chooseEnvEndpoint } from '../../utils/tools'
 import './map.css'
 import { useAppSelector, useAppDispatch } from '../../store/hooks'
-import { allBussesSet } from '../busses/bussesSlice'
+import { allBussesSet, selectedBusSet } from '../busses/bussesSlice'
 import { newTextAdded } from '../score/scoreSlice'
 import { freshRenderSet, signalTypeSet } from '../controls/controlsSlice'
 import { markerRefs, findMarker, textMarkerTimeouts, getChord } from './utils'
@@ -28,14 +28,16 @@ let chord = 0
 let start = 0
 let concertStart = 0
 
-const BusMarker = memo(({ place, selectedBus, showPreview }: any) => {
+const BusMarker = memo(({ place, selectedBus }: any) => {
+  const dispatch = useAppDispatch()
+
   const newRef = createRef<L.Marker>()
   markerRefs.push(newRef)
   return (
     <Marker
       key={place.id}
       position={[place.latitude, place.longitude]}
-      eventHandlers={{ click: () => showPreview(place) }}
+      eventHandlers={{ click: () => dispatch(selectedBusSet(place)) }}
       icon={L.divIcon({
         iconSize: [40, 40],
         iconAnchor: [20, 20],
@@ -102,7 +104,7 @@ export default function Map() {
       dispatch(
         newTextAdded({
           id: `newdata${Date.now()}`,
-          text: `There are currently ${routes.length} busses making moves`,
+          text: `There are currently ${routes.length} busses making music`,
           class: `newdata`,
         }),
       )
@@ -391,8 +393,6 @@ export default function Map() {
             <BusMarker
               key={place.id}
               place={place}
-              //  showPreview={showPreview}
-              //  selectedBus={selectedBus}
             />
           ))}
         {retiredBusses &&
@@ -402,7 +402,6 @@ export default function Map() {
               key={place.id}
               place={place}
               //  showPreview={showPreview}
-              //  selectedBus={selectedBus}
             />
           ))}
       </MapContainer>

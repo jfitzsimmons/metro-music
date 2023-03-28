@@ -31,7 +31,7 @@ export interface TextCue {
 export interface IBusState {
   busses: Bus[]
   selectedBus: Bus | null
-  placePreviewsIsVisible: boolean
+  busIsVisible: boolean
   retiredBusses: Bus[]
   updatedRoutes: Bus[]
   stationaryBusses: Bus[]

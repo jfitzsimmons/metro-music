@@ -6,7 +6,7 @@ import { partition } from '../../utils/tools'
 const initialState: BusState = {
   busses: [],
   selectedBus: null,
-  placePreviewsIsVisible: false,
+  busIsVisible: false,
   retiredBusses: [],
   updatedRoutes: [],
   stationaryBusses: [],
@@ -82,16 +82,17 @@ const bussesSlice = createSlice({
     },
     selectedBusSet(state, action) {
       state.selectedBus = action.payload
+      if (state.busIsVisible === false) state.busIsVisible = true
     },
-    busIsVisible(state, action) {
-      state.placePreviewsIsVisible = action.payload
+    busVisibilitySet(state, action) {
+      state.busIsVisible = action.payload
     },
   },
 })
 
 // `createSlice` automatically generated action creators with these names.
 // export them as named exports from this "slice" file
-export const { allBussesSet, selectedBusSet, busIsVisible } =
+export const { allBussesSet, selectedBusSet, busVisibilitySet } =
   bussesSlice.actions
 
 // Export the slice reducer as the default export

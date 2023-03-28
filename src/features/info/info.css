@@ -52,7 +52,6 @@
 .preview__description {
   line-height: 1.5rem;
   color: #ccc;
-  
 }
 
 .preview__picture {
@@ -67,4 +66,13 @@
     top: 28vh;
     width: 33%;
   }
+}
+
+.info__container {
+  background: #fffd;
+  height: 100vh;
+  margin: 1vmin;
+  position: fixed;
+  width: 100vw;
+  z-index: 1;
 }

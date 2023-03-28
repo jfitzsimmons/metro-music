@@ -11,10 +11,10 @@ export function resetAudioContext() {
 
 export const progressions = [
   [
-    ['D', 'E', 'F#', 'A'],
-    ['B', 'A', 'E', 'C#'],
-    ['E', 'F#', 'G#', 'B'],
-    ['A', 'F#', 'E', 'C#'],
+    ['D', 'E', 'F#', 'A'], // measure 1
+    ['B', 'A', 'E', 'C#'], // measure 2
+    ['E', 'F#', 'G#', 'B'], // measure 3
+    ['A', 'F#', 'E', 'C#'], // measure 4
   ],
   [
     ['C', 'E', 'G', 'A'],
