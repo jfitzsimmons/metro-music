@@ -4,6 +4,7 @@ export interface ControlState {
   progression: Progression
   signalType: string | null
   freshRender: boolean | null
+  showInfo: boolean
 }
 
 export interface Progression {

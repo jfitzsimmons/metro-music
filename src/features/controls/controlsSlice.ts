@@ -10,6 +10,7 @@ const initialState: ControlState = {
   },
   signalType: null,
   freshRender: null,
+  showInfo: true,
 }
 
 const controlsSlice = createSlice({
@@ -32,6 +33,9 @@ const controlsSlice = createSlice({
     freshRenderSet(state, action) {
       state.freshRender = action.payload
     },
+    showInfoSet(state, action) {
+      state.showInfo = action.payload
+    },
   },
 })
 
@@ -43,6 +47,7 @@ export const {
   progressionChosen,
   signalTypeSet,
   freshRenderSet,
+  showInfoSet,
 } = controlsSlice.actions
 
 // Export the slice reducer as the default export
