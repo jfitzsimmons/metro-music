@@ -8,17 +8,19 @@ import {
 } from 'react-icons/im'
 import { GiMusicalScore } from 'react-icons/gi'
 import { BiArrowToLeft } from 'react-icons/bi'
-import { BsFillPlayFill, BsPauseFill, BsStopFill } from 'react-icons/bs'
+import { BsFillPlayFill, BsPauseFill, BsStopFill, BsInfo } from 'react-icons/bs'
 import { useAppSelector, useAppDispatch } from '../../store/hooks'
 
 import { ReactComponent as MetroIcon } from '../../assets/svg/metro.svg'
 import { debounce } from '../../utils/tools'
 import { newTextAdded, scoreVisibilitySet } from '../score/scoreSlice'
+import { busVisibilitySet } from '../busses/bussesSlice'
 import {
   volumeSet,
   progressionChosen,
   orchestraPaused,
   signalTypeSet,
+  showInfoSet,
 } from './controlsSlice'
 
 const datenow = new Date()
@@ -93,6 +95,11 @@ export default function Controls() {
     )
   }
 
+  function showInfo() {
+    dispatch(showInfoSet(true))
+    dispatch(busVisibilitySet(true))
+  }
+
   useEffect(() => {
     if (signalType === 'stop' && pause === false)
       dispatch(orchestraPaused(true))
@@ -104,12 +111,18 @@ export default function Controls() {
         scoreIsVisible && 'active'
       }`}
     >
-      <div
-        className={`score-toggle ${scoreIsVisible ? 'unflipped' : 'flipped'}`}
+      <button
+        className="score-button"
+        type="button"
+        onClick={() => dispatch(scoreVisibilitySet())}
       >
-        <BiArrowToLeft onClick={() => dispatch(scoreVisibilitySet())} />
-        <GiMusicalScore onClick={() => dispatch(scoreVisibilitySet())} />
-      </div>
+        <div
+          className={`score-toggle ${scoreIsVisible ? 'unflipped' : 'flipped'}`}
+        >
+          <BiArrowToLeft />
+          <GiMusicalScore />
+        </div>
+      </button>
       <div className="controls">
         <div className="controls__buttons">
           <button
@@ -126,6 +139,13 @@ export default function Controls() {
             onMouseUp={() => dispatch(signalTypeSet('stop'))}
           >
             <BsStopFill />
+          </button>
+          <button
+            type="button"
+            className="controls__buttons-info"
+            onMouseUp={() => showInfo()}
+          >
+            <BsInfo />
           </button>
         </div>
         <div className="select-div song">

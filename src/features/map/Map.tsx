@@ -1,6 +1,6 @@
 import React, { useEffect, useCallback, useRef, createRef, memo } from 'react'
-import L, { LatLngExpression } from 'leaflet'
-import { MapContainer, TileLayer, Marker, Tooltip } from 'react-leaflet'
+import L from 'leaflet'
+import { MapContainer, TileLayer, Marker, Tooltip, useMap } from 'react-leaflet'
 import { Bus } from '../../store/models'
 import {
   playSweep,
@@ -13,7 +13,7 @@ import { getAdsr, pickOctaveByLat } from '../../utils/waveShaping'
 import { usePrevious, chooseEnvEndpoint } from '../../utils/tools'
 import './map.css'
 import { useAppSelector, useAppDispatch } from '../../store/hooks'
-import { allBussesSet } from '../busses/bussesSlice'
+import { allBussesSet, selectedBusSet } from '../busses/bussesSlice'
 import { newTextAdded } from '../score/scoreSlice'
 import { freshRenderSet, signalTypeSet } from '../controls/controlsSlice'
 import { markerRefs, findMarker, textMarkerTimeouts, getChord } from './utils'
@@ -28,14 +28,16 @@ let chord = 0
 let start = 0
 let concertStart = 0
 
-const BusMarker = memo(({ place, selectedBus, showPreview }: any) => {
+const BusMarker = memo(({ place, selectedBus }: any) => {
+  const dispatch = useAppDispatch()
+
   const newRef = createRef<L.Marker>()
   markerRefs.push(newRef)
   return (
     <Marker
       key={place.id}
       position={[place.latitude, place.longitude]}
-      eventHandlers={{ click: () => showPreview(place) }}
+      eventHandlers={{ click: () => dispatch(selectedBusSet(place)) }}
       icon={L.divIcon({
         iconSize: [40, 40],
         iconAnchor: [20, 20],
@@ -52,14 +54,26 @@ const BusMarker = memo(({ place, selectedBus, showPreview }: any) => {
   )
 })
 
+function RecenterAutomatically({ lat, lng }: any) {
+  const map = useMap()
+  useEffect(() => {
+    map.setView([lat, lng])
+  }, [lat, lng, map])
+  return null
+}
+
 export default function Map() {
   const dispatch = useAppDispatch()
-  const { busses, retiredBusses, updatedRoutes, stationaryBusses } =
-    useAppSelector((state) => state.busses)
+  const {
+    busses,
+    retiredBusses,
+    updatedRoutes,
+    stationaryBusses,
+    defaultPosition,
+  } = useAppSelector((state) => state.busses)
   const { volume, pause, signalType, freshRender, progression } =
     useAppSelector((state) => state.controls)
   const timeout: { current: NodeJS.Timeout | null } = useRef(null)
-  const defaultPosition: LatLngExpression = [38.65727, -90.29789]
   const prevBusses = usePrevious(busses)
   const prevPause = usePrevious(pause)
   const prevFreshRender = usePrevious(freshRender)
@@ -102,7 +116,7 @@ export default function Map() {
       dispatch(
         newTextAdded({
           id: `newdata${Date.now()}`,
-          text: `There are currently ${routes.length} busses making moves`,
+          text: `There are currently ${routes.length} busses making music`,
           class: `newdata`,
         }),
       )
@@ -134,8 +148,6 @@ export default function Map() {
         playStationaryBusses(stationaryBusses, progression.index, chord)
 
       routes.forEach((r: Bus, i: number) => {
-        chord = getChord(parseInt(r.timestamp, 10) - concertStart)
-
         type OctaveKey = keyof typeof noteFreq
         const octave: OctaveKey = pickOctaveByLat(r.latitude)
         const octaveNoteFreqs = noteFreq[octave]
@@ -143,6 +155,7 @@ export default function Map() {
         const note: NoteKey =
           progressions[progression.index][chord][Math.round(rndmRng(3, 0))] // Ex: C#
 
+        chord = getChord(parseInt(r.timestamp, 10) - concertStart)
         // stutter simultaneous start times
         if (routes[i - 1] && r.timestamp === routes[i - 1].timestamp) {
           start =
@@ -352,30 +365,11 @@ export default function Map() {
     dispatch,
     updatedRoutes,
   ])
-  /** 
-   * testjpf do preview and info
-  const showBus = (place: Bus) => {
-    setBusForPreview(place)
-    togglePreview(true)
-  }
 
-  const showPreview = (place: Bus) => {
-    if (isVisible) {
-      togglePreview(false)
-      setBusForPreview(null)
-    }
-
-    if (selectedBus?.id !== place.id) {
-      setTimeout(() => {
-        showBus(place)
-      }, 400)
-    }
-  }
-*/
   return (
     <div className="map__container">
       <MapContainer
-        center={defaultPosition}
+        center={[38.65727, -90.29789]}
         zoom={11}
         scrollWheelZoom
         style={{ height: '100vh' }}
@@ -391,8 +385,6 @@ export default function Map() {
             <BusMarker
               key={place.id}
               place={place}
-              //  showPreview={showPreview}
-              //  selectedBus={selectedBus}
             />
           ))}
         {retiredBusses &&
@@ -401,10 +393,12 @@ export default function Map() {
             <BusMarker
               key={place.id}
               place={place}
-              //  showPreview={showPreview}
-              //  selectedBus={selectedBus}
             />
           ))}
+        <RecenterAutomatically
+          lat={defaultPosition[0]}
+          lng={defaultPosition[1]}
+        />
       </MapContainer>
     </div>
   )

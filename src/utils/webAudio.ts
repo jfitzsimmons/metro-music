@@ -11,10 +11,10 @@ export function resetAudioContext() {
 
 export const progressions = [
   [
-    ['D', 'E', 'F#', 'A'],
-    ['B', 'A', 'E', 'C#'],
-    ['E', 'F#', 'G#', 'B'],
-    ['A', 'F#', 'E', 'C#'],
+    ['D', 'E', 'F#', 'A'], // measure 1
+    ['B', 'A', 'E', 'C#'], // measure 2
+    ['E', 'F#', 'G#', 'B'], // measure 3
+    ['A', 'F#', 'E', 'C#'], // measure 4
   ],
   [
     ['C', 'E', 'G', 'A'],
@@ -204,7 +204,6 @@ export function playArp(notes: string[], delay: number, noteAmount: number) {
 
     gainNode.gain.cancelScheduledValues(audioContext.currentTime)
     gainNode.gain.setValueAtTime(0.33, audioContext.currentTime + delay + i / 6)
-
     osc
       .connect(gainNode)
       .connect(biquadFilter)
@@ -264,7 +263,11 @@ export function playSweep(sweep: {
     .connect(biquadFilter)
     .connect(stereo)
     .connect(audioContext.destination)
-
+  osc.onended = function nodeGarbage() {
+    gainNode.disconnect()
+  }
   osc.start(audioContext.currentTime + sweep.start)
   osc.stop(audioContext.currentTime + sweep.start + sweep.end)
+
+  return null
 }

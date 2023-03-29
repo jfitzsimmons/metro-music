@@ -4,6 +4,7 @@ export interface ControlState {
   progression: Progression
   signalType: string | null
   freshRender: boolean | null
+  showInfo: boolean
 }
 
 export interface Progression {
@@ -31,10 +32,11 @@ export interface TextCue {
 export interface IBusState {
   busses: Bus[]
   selectedBus: Bus | null
-  placePreviewsIsVisible: boolean
+  busIsVisible: boolean
   retiredBusses: Bus[]
   updatedRoutes: Bus[]
   stationaryBusses: Bus[]
+  defaultPosition: [number, number]
 }
 
 export type BusState = IBusState
@@ -53,7 +55,6 @@ export interface Bus {
   label: string
   distance?: number
   mph?: number
-  timing?: number
 }
 
 export interface Octaves {
