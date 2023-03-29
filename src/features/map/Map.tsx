@@ -1,13 +1,8 @@
 import React, { useEffect, useCallback, useRef, createRef, memo } from 'react'
-import L, { LatLngExpression } from 'leaflet'
-import { MapContainer, TileLayer, Marker, Tooltip } from 'react-leaflet'
+import L from 'leaflet'
+import { MapContainer, TileLayer, Marker, Tooltip, useMap } from 'react-leaflet'
 import { Bus } from '../../store/models'
-import {
-  playSweep,
-  noteFreq,
-  resetAudioContext,
-  progressions,
-} from '../../utils/webAudio'
+import { playSweep, noteFreq, resetAudioContext, progressions } from '../../utils/webAudio'
 import { countBy, rndmRng } from '../../utils/calculations'
 import { getAdsr, pickOctaveByLat } from '../../utils/waveShaping'
 import { usePrevious, chooseEnvEndpoint } from '../../utils/tools'
@@ -17,11 +12,7 @@ import { allBussesSet, selectedBusSet } from '../busses/bussesSlice'
 import { newTextAdded } from '../score/scoreSlice'
 import { freshRenderSet, signalTypeSet } from '../controls/controlsSlice'
 import { markerRefs, findMarker, textMarkerTimeouts, getChord } from './utils'
-import {
-  cleanBusData,
-  handleStaleVehicles,
-  playStationaryBusses,
-} from '../busses/utils'
+import { cleanBusData, handleStaleVehicles, playStationaryBusses } from '../busses/utils'
 
 let longAvg = -90.28392791748047
 let chord = 0
@@ -43,9 +34,7 @@ const BusMarker = memo(({ place, selectedBus }: any) => {
         iconAnchor: [20, 20],
         popupAnchor: [0, 0],
         shadowSize: [0, 0],
-        className: `map-icon map-icon_${place.id} ${
-          selectedBus && selectedBus.id === place.id && 'icon-selected'
-        }`,
+        className: `map-icon map-icon_${place.id} ${selectedBus && selectedBus.id === place.id && 'icon-selected'}`,
       })}
       ref={newRef as React.RefObject<L.Marker>}
     >
@@ -54,14 +43,19 @@ const BusMarker = memo(({ place, selectedBus }: any) => {
   )
 })
 
+function RecenterAutomatically({ lat, lng }: any) {
+  const map = useMap()
+  useEffect(() => {
+    map.setView([lat, lng])
+  }, [lat, lng, map])
+  return null
+}
+
 export default function Map() {
   const dispatch = useAppDispatch()
-  const { busses, retiredBusses, updatedRoutes, stationaryBusses } =
-    useAppSelector((state) => state.busses)
-  const { volume, pause, signalType, freshRender, progression } =
-    useAppSelector((state) => state.controls)
+  const { busses, retiredBusses, updatedRoutes, stationaryBusses, defaultPosition } = useAppSelector((state) => state.busses)
+  const { volume, pause, signalType, freshRender, progression } = useAppSelector((state) => state.controls)
   const timeout: { current: NodeJS.Timeout | null } = useRef(null)
-  const defaultPosition: LatLngExpression = [38.65727, -90.29789]
   const prevBusses = usePrevious(busses)
   const prevPause = usePrevious(pause)
   const prevFreshRender = usePrevious(freshRender)
@@ -74,9 +68,7 @@ export default function Map() {
             dispatch(
               newTextAdded({
                 id: `countdown${Date.now()}`,
-                text: `${i === 1000 ? 'updates in' : '...'} ${
-                  (timer - i) / 1000
-                }`,
+                text: `${i === 1000 ? 'updates in' : '...'} ${(timer - i) / 1000}`,
                 class: `loading`,
               }),
             )
@@ -110,30 +102,17 @@ export default function Map() {
       )
 
       let timestampDupes: any = {}
-      timestampDupes = countBy(
-        routes,
-        (r: { timestamp: number }) => r.timestamp,
-      )
+      timestampDupes = countBy(routes, (r: { timestamp: number }) => r.timestamp)
 
-      const batchStart = parseInt(
-        routes
-          .slice()
-          .sort(
-            (x: Bus, y: Bus) =>
-              parseInt(x.timestamp, 10) - parseInt(y.timestamp, 10),
-          )[0].timestamp,
-        10,
-      )
+      const batchStart = parseInt(routes.slice().sort((x: Bus, y: Bus) => parseInt(x.timestamp, 10) - parseInt(y.timestamp, 10))[0].timestamp, 10)
 
       let count = 1
 
       if (concertStart === 0) concertStart = batchStart
       chord = getChord(parseInt(routes[0].timestamp, 10) - concertStart)
 
-      if (retiredBusses.length > 0)
-        handleStaleVehicles(retiredBusses, progression.index, chord)
-      if (stationaryBusses.length > 0)
-        playStationaryBusses(stationaryBusses, progression.index, chord)
+      if (retiredBusses.length > 0) handleStaleVehicles(retiredBusses, progression.index, chord)
+      if (stationaryBusses.length > 0) playStationaryBusses(stationaryBusses, progression.index, chord)
 
       routes.forEach((r: Bus, i: number) => {
         chord = getChord(parseInt(r.timestamp, 10) - concertStart)
@@ -142,15 +121,11 @@ export default function Map() {
         const octave: OctaveKey = pickOctaveByLat(r.latitude)
         const octaveNoteFreqs = noteFreq[octave]
         type NoteKey = keyof typeof octaveNoteFreqs
-        const note: NoteKey =
-          progressions[progression.index][chord][Math.round(rndmRng(3, 0))] // Ex: C#
+        const note: NoteKey = progressions[progression.index][chord][Math.round(rndmRng(3, 0))] // Ex: C#
 
         // stutter simultaneous start times
         if (routes[i - 1] && r.timestamp === routes[i - 1].timestamp) {
-          start =
-            parseInt(r.timestamp, 10) -
-            batchStart +
-            (1 / timestampDupes[r.timestamp]) * count
+          start = parseInt(r.timestamp, 10) - batchStart + (1 / timestampDupes[r.timestamp]) * count
           count++
         } else {
           start = parseInt(r.timestamp, 10) - batchStart
@@ -162,8 +137,7 @@ export default function Map() {
         end = end * 10 > 4 ? 4 : end * 10
         const adsr = r && r.mph ? getAdsr(r.mph) : 0
         if (r.latitude > 38.66) longAvg = -90.3517098
-        const pan =
-          (Math.abs(longAvg) - Math.abs(r.longitude)) * 6 * (octave * 0.15)
+        const pan = (Math.abs(longAvg) - Math.abs(r.longitude)) * 6 * (octave * 0.15)
         const found = findMarker(r.id)
 
         textMarkerTimeouts.push(
@@ -182,9 +156,7 @@ export default function Map() {
             dispatch(
               newTextAdded({
                 id: `${r.id}${i}${start}${end}${Date.now()}`,
-                text: `${r.label} ~ is playing ${note}${octave} for ${(
-                  end * 2
-                ).toFixed(3)} beats`,
+                text: `${r.label} ~ is playing ${note}${octave} for ${(end * 2).toFixed(3)} beats`,
                 class: `vehicle`,
               }),
             )
@@ -204,19 +176,10 @@ export default function Map() {
         playSweep(sweep)
       })
 
-      const endTime: number =
-        (parseInt(routes[routes.length - 1].timestamp, 10) - batchStart + 0.3) *
-        1000
+      const endTime: number = (parseInt(routes[routes.length - 1].timestamp, 10) - batchStart + 0.3) * 1000
       return endTime // when batch will be done
     },
-    [
-      countDown,
-      dispatch,
-      progression.index,
-      retiredBusses,
-      stationaryBusses,
-      volume,
-    ],
+    [countDown, dispatch, progression.index, retiredBusses, stationaryBusses, volume],
   )
 
   const loadNewData = useCallback(
@@ -268,41 +231,18 @@ export default function Map() {
 
   useEffect(() => {
     // 1st data load to get busses
-    if (
-      freshRender === null &&
-      !pause &&
-      (prevFreshRender === null || prevFreshRender === false)
-    )
-      beginPiece()
+    if (freshRender === null && !pause && (prevFreshRender === null || prevFreshRender === false)) beginPiece()
   }, [beginPiece, freshRender, pause, prevFreshRender])
 
   useEffect(() => {
-    if (
-      updatedRoutes &&
-      updatedRoutes.length > 0 &&
-      busses !== prevBusses &&
-      prevBusses &&
-      prevBusses.length > 0 &&
-      !pause &&
-      prevFreshRender === false &&
-      freshRender === false
-    ) {
+    if (updatedRoutes && updatedRoutes.length > 0 && busses !== prevBusses && prevBusses && prevBusses.length > 0 && !pause && prevFreshRender === false && freshRender === false) {
       // play music and get new data when batch completes
       loadNewData(makeMusicAndDance(updatedRoutes))
     } else if (prevFreshRender === null && freshRender === false) {
       // 2nd data load to calculate movement
       loadNewData(7000)
       countDown(7000)
-    } else if (
-      updatedRoutes &&
-      updatedRoutes.length === 0 &&
-      busses !== prevBusses &&
-      prevBusses &&
-      prevBusses.length > 0 &&
-      !pause &&
-      prevFreshRender === false &&
-      freshRender === false
-    ) {
+    } else if (updatedRoutes && updatedRoutes.length === 0 && busses !== prevBusses && prevBusses && prevBusses.length > 0 && !pause && prevFreshRender === false && freshRender === false) {
       dispatch(
         newTextAdded({
           id: `loading${Date.now()}`,
@@ -323,15 +263,9 @@ export default function Map() {
       }
       dispatch(signalTypeSet(null))
       dispatch(freshRenderSet(null))
-    } else if (
-      signalType === 'interrupt' &&
-      pause === false &&
-      prevPause === true &&
-      prevFreshRender !== null
-    ) {
+    } else if (signalType === 'interrupt' && pause === false && prevPause === true && prevFreshRender !== null) {
       // soft reset
-      const timeElapsed: number =
-        Math.floor(Date.now() / 1000) - parseInt(busses[0].timestamp, 10)
+      const timeElapsed: number = Math.floor(Date.now() / 1000) - parseInt(busses[0].timestamp, 10)
       if (timeElapsed > 50) {
         loadNewData(null)
       } else {
@@ -339,21 +273,7 @@ export default function Map() {
         countDown(4000)
       }
     }
-  }, [
-    pause,
-    loadNewData,
-    busses,
-    prevBusses,
-    makeMusicAndDance,
-    signalType,
-    prevPause,
-    freshRender,
-    prevFreshRender,
-    progression.index,
-    countDown,
-    dispatch,
-    updatedRoutes,
-  ])
+  }, [pause, loadNewData, busses, prevBusses, makeMusicAndDance, signalType, prevPause, freshRender, prevFreshRender, progression.index, countDown, dispatch, updatedRoutes])
   /** 
    * testjpf do preview and info
   const showBus = (place: Bus) => {
@@ -377,7 +297,7 @@ export default function Map() {
   return (
     <div className="map__container">
       <MapContainer
-        center={defaultPosition}
+        center={[38.65727, -90.29789]}
         zoom={11}
         scrollWheelZoom
         style={{ height: '100vh' }}
@@ -404,6 +324,10 @@ export default function Map() {
               //  showPreview={showPreview}
             />
           ))}
+        <RecenterAutomatically
+          lat={defaultPosition[0]}
+          lng={defaultPosition[1]}
+        />
       </MapContainer>
     </div>
   )

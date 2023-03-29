@@ -4,12 +4,23 @@ import { distance } from '../../utils/calculations'
 import { partition } from '../../utils/tools'
 
 const initialState: BusState = {
-  busses: [],
+  busses: [
+    {
+      id: '6713',
+      latitude: 38.66791915893555,
+      longitude: -90.44339752197266,
+      timestamp: '1680005702',
+      label: '98 Ballas-North Hanley - SOUTH',
+      distance: 0.14548427720869206,
+      mph: 16.366981185977856,
+    },
+  ],
   selectedBus: null,
-  busIsVisible: false,
+  busIsVisible: true,
   retiredBusses: [],
   updatedRoutes: [],
   stationaryBusses: [],
+  defaultPosition: [38.65727, -90.29789],
 }
 
 const bussesSlice = createSlice({
@@ -38,9 +49,6 @@ const bussesSlice = createSlice({
             nextBusses[i2].latitude,
             nextBusses[i2].longitude,
           )
-          nextBusses[i2].timing =
-            parseInt(nextBusses[i2].timestamp, 10) -
-            parseInt(pastBusses[i].timestamp, 10)
           nextBusses[i2].mph =
             (distance(
               pastBusses[i].latitude,
@@ -87,13 +95,20 @@ const bussesSlice = createSlice({
     busVisibilitySet(state, action) {
       state.busIsVisible = action.payload
     },
+    defaultMapPositionSet(state, action) {
+      state.defaultPosition = action.payload
+    },
   },
 })
 
 // `createSlice` automatically generated action creators with these names.
 // export them as named exports from this "slice" file
-export const { allBussesSet, selectedBusSet, busVisibilitySet } =
-  bussesSlice.actions
+export const {
+  allBussesSet,
+  selectedBusSet,
+  busVisibilitySet,
+  defaultMapPositionSet,
+} = bussesSlice.actions
 
 // Export the slice reducer as the default export
 export default bussesSlice.reducer

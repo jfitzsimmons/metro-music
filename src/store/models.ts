@@ -35,6 +35,7 @@ export interface IBusState {
   retiredBusses: Bus[]
   updatedRoutes: Bus[]
   stationaryBusses: Bus[]
+  defaultPosition: [number, number]
 }
 
 export type BusState = IBusState
@@ -53,7 +54,6 @@ export interface Bus {
   label: string
   distance?: number
   mph?: number
-  timing?: number
 }
 
 export interface Octaves {

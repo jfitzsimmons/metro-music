@@ -1,42 +1,30 @@
 import React, { ChangeEvent, useEffect } from 'react'
 import './controls.css'
-import {
-  ImVolumeMedium,
-  ImVolumeLow,
-  ImVolumeHigh,
-  ImVolumeMute,
-} from 'react-icons/im'
+import { ImVolumeMedium, ImVolumeLow, ImVolumeHigh, ImVolumeMute } from 'react-icons/im'
 import { GiMusicalScore } from 'react-icons/gi'
 import { BiArrowToLeft } from 'react-icons/bi'
-import { BsFillPlayFill, BsPauseFill, BsStopFill } from 'react-icons/bs'
+import { BsFillPlayFill, BsPauseFill, BsStopFill, BsInfo } from 'react-icons/bs'
 import { useAppSelector, useAppDispatch } from '../../store/hooks'
 
 import { ReactComponent as MetroIcon } from '../../assets/svg/metro.svg'
 import { debounce } from '../../utils/tools'
 import { newTextAdded, scoreVisibilitySet } from '../score/scoreSlice'
-import {
-  volumeSet,
-  progressionChosen,
-  orchestraPaused,
-  signalTypeSet,
-} from './controlsSlice'
+import { busVisibilitySet } from '../busses/bussesSlice'
+import { volumeSet, progressionChosen, orchestraPaused, signalTypeSet } from './controlsSlice'
 
 const datenow = new Date()
 
 export default function Controls() {
   const dispatch = useAppDispatch()
-  const { volume, pause, signalType } = useAppSelector(
-    (state) => state.controls,
-  )
+  const { volume, pause, signalType } = useAppSelector((state) => state.controls)
   const { scoreIsVisible } = useAppSelector((state) => state.score)
+  const { busIsVisible } = useAppSelector((state) => state.busses)
 
   const delayText = debounce(() => {
     dispatch(
       newTextAdded({
         id: `volume${Date.now()}`,
-        text: `Volume will be set to ${Math.round(
-          parseFloat(volume) * 100,
-        )}% with the next batch of data.`,
+        text: `Volume will be set to ${Math.round(parseFloat(volume) * 100)}% with the next batch of data.`,
         class: `controls-change`,
       }),
     )
@@ -83,33 +71,28 @@ export default function Controls() {
     dispatch(
       newTextAdded({
         id: `playback${Date.now()}`,
-        text: `The piece will ${
-          pause === false
-            ? 'stop after this batch of data.'
-            : 'begin again shortly.'
-        } `,
+        text: `The piece will ${pause === false ? 'stop after this batch of data.' : 'begin again shortly.'} `,
         class: `controls-change`,
       }),
     )
   }
 
   useEffect(() => {
-    if (signalType === 'stop' && pause === false)
-      dispatch(orchestraPaused(true))
+    if (signalType === 'stop' && pause === false) dispatch(orchestraPaused(true))
   }, [dispatch, pause, signalType])
 
   return (
-    <div
-      className={`header__container header__container--${
-        scoreIsVisible && 'active'
-      }`}
-    >
-      <div
-        className={`score-toggle ${scoreIsVisible ? 'unflipped' : 'flipped'}`}
+    <div className={`header__container header__container--${scoreIsVisible && 'active'}`}>
+      <button
+        className="score-button"
+        type="button"
+        onClick={() => dispatch(scoreVisibilitySet())}
       >
-        <BiArrowToLeft onClick={() => dispatch(scoreVisibilitySet())} />
-        <GiMusicalScore onClick={() => dispatch(scoreVisibilitySet())} />
-      </div>
+        <div className={`score-toggle ${scoreIsVisible ? 'unflipped' : 'flipped'}`}>
+          <BiArrowToLeft />
+          <GiMusicalScore />
+        </div>
+      </button>
       <div className="controls">
         <div className="controls__buttons">
           <button
@@ -126,6 +109,13 @@ export default function Controls() {
             onMouseUp={() => dispatch(signalTypeSet('stop'))}
           >
             <BsStopFill />
+          </button>
+          <button
+            type="button"
+            className="controls__buttons-info"
+            onMouseUp={() => dispatch(busVisibilitySet(!busIsVisible))}
+          >
+            <BsInfo />
           </button>
         </div>
         <div className="select-div song">
@@ -147,17 +137,13 @@ export default function Controls() {
                 </select>
               </div>
             </div>
-            <div className="song__info">
-              St. Louis Metro Bus Drivers - {datenow.toDateString()}
-            </div>
+            <div className="song__info">St. Louis Metro Bus Drivers - {datenow.toDateString()}</div>
           </div>
         </div>
         <div
           className="volume"
           style={{
-            background: `hsla(209, ${Math.round(
-              parseFloat(volume) * 100,
-            )}%, 20%, .4)`,
+            background: `hsla(209, ${Math.round(parseFloat(volume) * 100)}%, 20%, .4)`,
           }}
         >
           <div className="volume__amount">

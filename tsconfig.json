@@ -9,7 +9,6 @@
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "sourceMap": true,
-    "pretty": true,
     "allowJs": true,
     "allowUnreachableCode": true,
     "allowUnusedLabels": true,

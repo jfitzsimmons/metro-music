@@ -204,7 +204,6 @@ export function playArp(notes: string[], delay: number, noteAmount: number) {
 
     gainNode.gain.cancelScheduledValues(audioContext.currentTime)
     gainNode.gain.setValueAtTime(0.33, audioContext.currentTime + delay + i / 6)
-
     osc
       .connect(gainNode)
       .connect(biquadFilter)
@@ -264,7 +263,11 @@ export function playSweep(sweep: {
     .connect(biquadFilter)
     .connect(stereo)
     .connect(audioContext.destination)
-
+  osc.onended = function nodeGarbage() {
+    gainNode.disconnect()
+  }
   osc.start(audioContext.currentTime + sweep.start)
   osc.stop(audioContext.currentTime + sweep.start + sweep.end)
+
+  return null
 }

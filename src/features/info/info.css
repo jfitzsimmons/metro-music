@@ -61,18 +61,17 @@
   background-position: center;
 }
 
-@media only screen and (min-width: 768px) {
-  .preview__container {
-    top: 28vh;
-    width: 33%;
-  }
-}
-
 .info__container {
-  background: #fffd;
   height: 100vh;
   margin: 1vmin;
-  position: fixed;
-  width: 100vw;
-  z-index: 1;
+}
+
+li {
+  margin-bottom: 1vmin;
+}
+
+@media only screen and (min-width: 768px) {
+  .preview__container {
+    width: 33%;
+  }
 }
