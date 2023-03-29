@@ -36,3 +36,7 @@ a:hover {
 .bottom-margin {
   margin-bottom: 3rem;
 }
+
+.yellow-text {
+  color: rgba(242, 179, 4, 0.9);
+}

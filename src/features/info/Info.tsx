@@ -227,14 +227,21 @@ export default function Info() {
               looks like the following
             </p>
 
-            <pre>{`
-  [
-    ['D', 'E', 'F#', 'A'],  // measure 1 
+            <pre>
+              {`
+  [`}
+              <span className="yellow-text">
+                {' '}
+                {`
+    ['D', 'E', 'F#', 'A'],`}
+              </span>
+              {`  // measure 1 
     ['B', 'A', 'E', 'C#'],  // measure 2 
     ['E', 'F#', 'G#', 'B'], // measure 3 
     ['A', 'F#', 'E', 'C#'], // measure 4 
   ],
-          `}</pre>
+          `}
+            </pre>
 
             <p>
               Assuming our example bus plays in the first measure, it will
@@ -250,15 +257,23 @@ export default function Info() {
     A: 220.0, 
     'A#': 233.0818807590449, 
     B: 246.941650628062, 
-  }, 
-  4: { 
+  },`}
+              <span className="yellow-text">
+                {`
+  4: { `}
+              </span>
+              {`
     C: 261.6255653005986, 
     'C#': 277.182630976872,
     D: 293.6647679174075, 
     'D#': 311.1269837220809, 
     E: 329.62755691286992, 
-    F: 349.228231433003884, 
-    'F#': 369.9944227116343, 
+    F: 349.228231433003884,`}
+              <span className="yellow-text">
+                {` 
+    'F#': 369.9944227116343, `}
+              </span>
+              {`
     G: 391.9954359817493, 
     'G#': 415.30469757994513, 
     A: 440.0, 
@@ -276,7 +291,8 @@ export default function Info() {
             </pre>
 
             <p className="bold bottom-margin">
-              4: F#: gives us the frequency of 369.9944227116343.
+              <span className="yellow-text">4: F#:</span> gives us the frequency
+              of <span className="yellow-text">369.9944227116343</span>.
             </p>
 
             <p>
