@@ -10,14 +10,14 @@ import {
   defaultMapPositionSet,
   selectedBusSet,
 } from '../busses/bussesSlice'
-import { showInfoSet } from '../controls/controlsSlice'
-
+import { showInfoSet, orchestraPaused } from '../controls/controlsSlice'
 import './info.css'
 
 export default function Info() {
   const dispatch = useAppDispatch()
-  const { volume, showInfo } = useAppSelector((state) => state.controls)
+  const { volume, showInfo, pause } = useAppSelector((state) => state.controls)
   const { busIsVisible, selectedBus } = useAppSelector((state) => state.busses)
+
   const sweep = () => {
     const found = findMarker('6713')
     if (found && found.current) {
@@ -68,6 +68,12 @@ export default function Info() {
     dispatch(showInfoSet(false))
     dispatch(selectedBusSet(null))
   }
+
+  function skipInfoAndPlay() {
+    closePane()
+    dispatch(orchestraPaused(false))
+  }
+
   return (
     <div
       className={`preview__container preview__container--${
@@ -110,7 +116,8 @@ export default function Info() {
                 <span className="bold">Distance:</span> {selectedBus?.distance}
               </li>
               <li>
-                <span className="bold">MPH:</span> {selectedBus?.mph}
+                <span className="bold">MPH:</span>{' '}
+                {selectedBus?.mph ? selectedBus?.mph : 0}
               </li>
             </ul>
           </div>
@@ -149,11 +156,26 @@ export default function Info() {
                 hold their notes longer.
               </li>
             </ul>
-
+            {pause && (
+              <button
+                className="bottom-margin play"
+                type="button"
+                onClick={() => skipInfoAndPlay()}
+              >
+                Skip and Play?
+              </button>
+            )}
             <p>
               <strong className="flourish">Step 1. &#10095; </strong>
               <span className="bold">
-                Retrieve data about busses from metrostlouis.org.
+                Retrieve data about busses from{' '}
+                <a
+                  href="https://www.metrostlouis.org/developer-resources/"
+                  rel="nofollow"
+                >
+                  metrostlouis.org
+                </a>
+                .
               </span>{' '}
               Updated bus locations indicate movement. Using these movements,
               notes are played based on each bus&apos;s speed, distance traveled

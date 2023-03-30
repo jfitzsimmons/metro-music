@@ -26,7 +26,6 @@
 .score__header__close {
   position: absolute;
   left: 1rem;
-  background: none;
   padding: 0;
   border: 0;
   font-size: 1.5rem;
@@ -89,7 +88,7 @@
 .bus {
   background: linear-gradient(
     90deg,
-    rgba(37, 51, 64, 0.6992997882746849) 1%,
+    rgba(37, 51, 64, 0.7) 1%,
     rgb(53, 83, 112) 99%
   );
   display: inline-block;
