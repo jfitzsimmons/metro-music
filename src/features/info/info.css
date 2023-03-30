@@ -26,7 +26,7 @@
 }
 
 .preview__description__container {
-  padding: 1rem;
+  padding: 4vmin 1rem 1rem;
 }
 
 .preview__close {
@@ -34,7 +34,7 @@
   right: 1rem;
   top: 1rem;
   font-size: 2rem;
-  color: #fffd;
+  color: rgba(242, 179, 4, 0.9);
   cursor: pointer;
 }
 
@@ -56,6 +56,7 @@
   font-weight: bold;
   font-size: 1.25rem;
   margin-bottom: 1rem;
+  width: 90%;
 }
 
 .preview__description {
@@ -91,16 +92,16 @@
   align-items: center;
 }
 
-button {
+.info__container button {
   aspect-ratio: unset;
-  margin: 1vmin auto;
+  margin: 1vmin auto 3rem;
 }
 
-pre {
+.info__container pre {
   font-size: 1rem;
 }
 
-li {
+.info__container li {
   margin-bottom: 1vmin;
 }
 
