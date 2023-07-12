@@ -6,7 +6,7 @@ import Info from './features/info/Info'
 
 import './App.css'
 
-function App() {
+export default function App() {
   return (
     <main>
       <Score />
@@ -16,5 +16,3 @@ function App() {
     </main>
   )
 }
-
-export default App
